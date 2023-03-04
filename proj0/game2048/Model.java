@@ -124,7 +124,7 @@ public class Model extends Observable {
     }
 
     /**
-     * Tilt the board toward SIDE. Return true iff this changes the board.
+     * Tilt the board toward SIDE. Return true if this changes the board.
      * <p>
      * 1. If two Tile objects are adjacent in the direction of motion and have
      * the same value, they are merged into one Tile of twice the original
@@ -139,16 +139,76 @@ public class Model extends Observable {
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
+        board.setViewingPerspective(side);
 
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
+        for (int i = 0; i < board.size(); i++) {
+            int[] mergedTiles = new int[board.size()];
+            int index = 0;
+            for (int j = board.size() - 2; j >= 0; j--) {
+                int mergedRow = tryToMoveUp(i, j, mergedTiles);
+                if (mergedRow != -1 && mergedRow != -2) {
+                    mergedTiles[index] = mergedRow;
+                    index++;
+                }
+                if (mergedRow != -2) {
+                    changed = true;
+                }
+            }
+        }
 
+        board.setViewingPerspective(Side.NORTH);
         checkGameOver();
         if (changed) {
             setChanged();
         }
         return changed;
+    }
+
+    private int tryToMoveUp(int currCol, int currRow, int[] mergedTiles) {
+        Tile curr = board.tile(currCol, currRow);
+        if (curr == null) return -2;
+        System.out.println(curr.value());
+
+        /* -1 indicates that there is no emptyTileIndex nor sameTileIndex. sameTileIndex will only change to
+         *  positive number if tile is able to move there */
+        int emptyTile = -1;
+        int sameTile = -1;
+        // Loop checking up the column
+        for (int i = currRow + 1; i < board.size(); i++) {
+            Tile nextTile = board.tile(currCol, i);
+            if (nextTile == null) {
+                emptyTile = i;
+                continue;
+            }
+            if (nextTile.value() == curr.value() &&
+                    (emptyTile == i - 1 || currRow == board.size() - 2 || currRow == i - 1)) {
+                sameTile = i;
+            }
+        }
+
+        if (sameTile != -1) {
+            boolean alreadyMerged = false;
+            for (int index : mergedTiles) {
+                if (index == sameTile) {
+                    alreadyMerged = true;
+                    break;
+                }
+            }
+            if (!alreadyMerged) {
+                board.move(currCol, sameTile, curr);
+                score += curr.value() * 2;
+                return sameTile;
+            }
+        }
+
+        if (emptyTile != -1) {
+            board.move(currCol, emptyTile, curr);
+            return -1;
+        }
+        return -2;
     }
 
     /**
@@ -210,9 +270,9 @@ public class Model extends Observable {
                 Tile nextTile = b.tile(j + 1, i);
                 if (isTileSameValue(currentTile, nextTile)) return true;
                 // vertical checks
-                Tile verticalCurr = b.tile(i, j);
-                Tile verticalNext = b.tile(i, j + 1);
-                if (isTileSameValue(verticalCurr, verticalNext)) return true;
+                currentTile = b.tile(i, j);
+                nextTile = b.tile(i, j + 1);
+                if (isTileSameValue(currentTile, nextTile)) return true;
             }
         }
         return false;
