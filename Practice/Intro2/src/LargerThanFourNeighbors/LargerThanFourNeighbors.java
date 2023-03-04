@@ -1,4 +1,5 @@
-
+package LargerThanFourNeighbors;
+import Dog.Dog;
 public class LargerThanFourNeighbors {
     public static Dog[] largerThanFourNeighbors(Dog[] dogs) {
         Dog[] result = new Dog[dogs.length];
