@@ -1,10 +1,40 @@
 public class IntList {
     public int first;
-    public IntList next;
+    public IntList rest;
 
-    public IntList(int first, IntList next) {
+    public IntList(int first, IntList rest) {
         this.first = first;
-        this.next = next;
+        this.rest = rest;
+    }
+
+    public static void main(String[] args) {
+        IntList L = new IntList(5, null);
+        L = IntList.addFirst(5, L);
+        System.out.println(L.first);
+        L.addAdjacent();
+        System.out.println(L.first);
+    }
+
+    /**
+     * We want to add a method to IntList so that if 2 numbers in a row are the same, we add them together and
+     * make one large node. For example:
+     * 1 → 1 → 2 → 3 becomes 2 → 2 → 3 which becomes 4 → 3
+     */
+    public void addAdjacent() {
+        addAdjacent(this);
+    }
+
+    private static void addAdjacent(IntList L) {
+        if (L == null || L.rest == null) {
+            return;
+        }
+        if (L.first == L.rest.first) {
+            L.first = L.first * 2;
+            L.rest = L.rest.rest;
+            addAdjacent(L);
+        } else {
+            addAdjacent(L.rest);
+        }
     }
 
     /**
@@ -18,7 +48,7 @@ public class IntList {
             return null;
         }
         IntList Q = new IntList(L.first + x, null);
-        Q.next = incrList(L.next, x);
+        Q.rest = incrList(L.rest, x);
         return Q;
     }
 
@@ -33,35 +63,24 @@ public class IntList {
             return null;
         }
         L.first = L.first + x;
-        dincrList(L.next, x);
+        dincrList(L.rest, x);
         return L;
     }
 
-    public static void main(String[] args) {
-        IntList L = new IntList(5, null);
-        L.next = new IntList(7, null);
-        L.next.next = new IntList(9, null);
-
-        System.out.println(L.size());
-        System.out.println(L.iterativeSize());
-        System.out.println(L);
-
-        // Test your answers by uncommenting. Or copy and paste the
-        // code for incrList and dincrList into IntList.java and
-        // run it in the visualizer.
-        // System.out.println(L.get(1));
-        // IntList returned = incrList(L, 3);
-//        System.out.println(returned);
+    public static IntList addFirst(int x, IntList L) {
+        L = new IntList(x, L);
+        return L;
     }
+
 
     /**
      * Return the size of the list using recursion
      */
     public int size() {
-        if (this.next == null) {
+        if (this.rest == null) {
             return 1;
         }
-        return 1 + this.next.size();
+        return 1 + this.rest.size();
     }
 
     /**
@@ -70,8 +89,8 @@ public class IntList {
     public int iterativeSize() {
         IntList p = this;
         int totalSize = 1;
-        while (p.next != null) {
-            p = p.next;
+        while (p.rest != null) {
+            p = p.rest;
             totalSize++;
         }
         return totalSize;
@@ -84,6 +103,6 @@ public class IntList {
         if (idx == 0) {
             return this.first;
         }
-        return this.next.get(idx - 1);
+        return this.rest.get(idx - 1);
     }
 }
