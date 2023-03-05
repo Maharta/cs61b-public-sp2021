@@ -166,7 +166,16 @@ public class Model extends Observable {
         return changed;
     }
 
-    record ChangedInfo(boolean changed, String status, int index) {
+    class ChangedInfo {
+        boolean changed;
+        String status;
+        int index;
+
+        ChangedInfo(boolean changed, String status, int index) {
+            this.changed = changed;
+            this.status = status;
+            this.index = index;
+        }
     }
 
     /**
