@@ -1,6 +1,7 @@
 package game2048;
 
 import java.util.Formatter;
+import java.util.Objects;
 import java.util.Observable;
 
 
@@ -141,25 +142,23 @@ public class Model extends Observable {
         changed = false;
         board.setViewingPerspective(side);
 
-        // TODO: Modify this.board (and perhaps this.score) to account
-        // for the tilt to the Side SIDE. If the board changed, set the
-        // changed local variable to true.
         for (int i = 0; i < board.size(); i++) {
             int[] mergedTiles = new int[board.size()];
             int index = 0;
             for (int j = board.size() - 2; j >= 0; j--) {
-                int mergedRow = tryToMoveUp(i, j, mergedTiles);
-                if (mergedRow != -1 && mergedRow != -2) {
-                    mergedTiles[index] = mergedRow;
-                    index++;
-                }
-                if (mergedRow != -2) {
+                ChangedInfo moveInfo = tryToMove(i, j, mergedTiles, index);
+                if (moveInfo.changed) {
                     changed = true;
+                }
+                if (Objects.equals(moveInfo.status, "merge")) {
+                    mergedTiles[index] = moveInfo.index;
+                    index++;
                 }
             }
         }
 
         board.setViewingPerspective(Side.NORTH);
+
         checkGameOver();
         if (changed) {
             setChanged();
@@ -167,15 +166,59 @@ public class Model extends Observable {
         return changed;
     }
 
-    private int tryToMoveUp(int currCol, int currRow, int[] mergedTiles) {
-        Tile curr = board.tile(currCol, currRow);
-        if (curr == null) return -2;
-        System.out.println(curr.value());
+    record ChangedInfo(boolean changed, String status, int index) {
+    }
 
-        /* -1 indicates that there is no emptyTileIndex nor sameTileIndex. sameTileIndex will only change to
+    /**
+     * checks if current row is not blocked by another tile(s) to merge with index i.
+     * Only able to merge if rowIndex before index i is empty
+     * or index i is direct neighbor with currRow.
+     *
+     * @param currRow   the current row index that wants to merge with i.
+     * @param emptyTile the emptyTile row index, if there is none, value is -1
+     * @param i         the row index of tile to be merged with
+     */
+    private boolean mergeNotBlocked(int currRow, int emptyTile, int i) {
+        return emptyTile == i - 1 || currRow == i - 1;
+    }
+
+    /**
+     * Check if sameTile is still eligible to merge,
+     * with conditions that sameTile has not been merged yet. (rule 2 of 2048)
+     *
+     * @param sameTile    tile index to be merged with
+     * @param mergedTiles int array that contains index of tiles that has been merged
+     * @param mergedIndex current mergedTilesIndex for pushing and optimization.
+     */
+    private boolean ableToMerge(int sameTile, int[] mergedTiles, int mergedIndex) {
+        for (int i = 0; i < mergedIndex; i++) {
+            if (mergedTiles[i] == sameTile) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Method that is called by every single tile below the top most tiles row
+     * to try to move or merge with another tile if possible.
+     *
+     * @param currCol     current column index of the tile that try to move
+     * @param currRow     current row index of the tile that try to move
+     * @param mergedTiles array of integers that contains row tile index that has been merged
+     * @param mergedIndex current mergedTiles index for pushing and optimization
+     * @return the information whether a move / merge happened, with index and status.
+     */
+    private ChangedInfo tryToMove(int currCol, int currRow, int[] mergedTiles, int mergedIndex) {
+        Tile curr = board.tile(currCol, currRow);
+        if (curr == null) {
+            return new ChangedInfo(false, "none", -1);
+        }
+        /* -1 indicates that there is no emptyTile nor sameTile to merge. sameTile will only change to
          *  positive number if tile is able to move there */
         int emptyTile = -1;
         int sameTile = -1;
+
         // Loop checking up the column
         for (int i = currRow + 1; i < board.size(); i++) {
             Tile nextTile = board.tile(currCol, i);
@@ -183,32 +226,26 @@ public class Model extends Observable {
                 emptyTile = i;
                 continue;
             }
-            if (nextTile.value() == curr.value() &&
-                    (emptyTile == i - 1 || currRow == board.size() - 2 || currRow == i - 1)) {
+            if (nextTile.value() == curr.value() && mergeNotBlocked(currRow, emptyTile, i)) {
                 sameTile = i;
             }
         }
 
+
         if (sameTile != -1) {
-            boolean alreadyMerged = false;
-            for (int index : mergedTiles) {
-                if (index == sameTile) {
-                    alreadyMerged = true;
-                    break;
-                }
-            }
-            if (!alreadyMerged) {
+            if (ableToMerge(sameTile, mergedTiles, mergedIndex)) {
                 board.move(currCol, sameTile, curr);
                 score += curr.value() * 2;
-                return sameTile;
+                return new ChangedInfo(true, "merge", sameTile);
             }
         }
 
         if (emptyTile != -1) {
             board.move(currCol, emptyTile, curr);
-            return -1;
+            return new ChangedInfo(true, "move", emptyTile);
         }
-        return -2;
+
+        return new ChangedInfo(false, "none", -1);
     }
 
     /**
@@ -281,7 +318,7 @@ public class Model extends Observable {
     public static boolean isTileSameValue(Tile a, Tile b) {
         if (a == null && b == null) return true;
         if (a != null && b != null) {
-            if (a.value() == b.value()) return true;
+            return a.value() == b.value();
         }
         return false;
     }
