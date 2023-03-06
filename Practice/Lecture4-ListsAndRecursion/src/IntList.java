@@ -8,11 +8,27 @@ public class IntList {
     }
 
     public static void main(String[] args) {
-        IntList L = new IntList(5, null);
-        L = IntList.addFirst(5, L);
-        System.out.println(L.first);
-        L.addAdjacent();
-        System.out.println(L.first);
+        IntList L = new IntList(2, null);
+
+        System.out.println(L);
+
+        L.addSquared(5);
+        System.out.println(L);
+    }
+
+    public void addLast(int x) {
+        IntList p = this;
+        while (p.rest != null) {
+            p = p.rest;
+        }
+        p.rest = new IntList(x, null);
+    }
+
+    public String toString() {
+        if (this.rest == null) {
+            return first + "-->" + " null";
+        }
+        return first + "-->" + rest;
     }
 
     /**
@@ -24,8 +40,8 @@ public class IntList {
         addAdjacent(this);
     }
 
-    private static void addAdjacent(IntList L) {
-        if (L == null || L.rest == null) {
+    private void addAdjacent(IntList L) {
+        if (L.rest == null) {
             return;
         }
         if (L.first == L.rest.first) {
@@ -67,11 +83,35 @@ public class IntList {
         return L;
     }
 
-    public static IntList addFirst(int x, IntList L) {
-        L = new IntList(x, L);
-        return L;
+
+    public void addFirst(int x) {
+        IntList oldList = new IntList(this.first, this.rest);
+        IntList newList = new IntList(x, oldList);
+        this.first = newList.first;
+        this.rest = newList.rest;
     }
 
+    /**
+     * Modify the Intlist class so that every time you add a value you “square” the IntList. For example, upon the insertion of 5,
+     * the below IntList would transform from:
+     * 1 => 2 to 1 => 1 => 2 => 4 => 5
+     * and if 7 was added to the latter IntList, it would become
+     * 1 => 1 => 1 => 1 => 2 => 4 => 4 => 16 => 5 => 25 => 7
+     * Additionally, you are provided the constraint that you can only access the size() function one time during the entire process of adding a node.
+     */
+    public void addSquared(int x) {
+        IntList squared = addSquared(x, this);
+        this.first = squared.first;
+        this.rest = squared.rest;
+    }
+
+    private IntList addSquared(int x, IntList L) {
+        if (L.rest == null) {
+            return new IntList(L.first, new IntList(L.first * 2, new IntList(x, null)));
+        }
+
+        return new IntList(L.first, new IntList(L.first * 2, addSquared(x, L.rest)));
+    }
 
     /**
      * Return the size of the list using recursion
