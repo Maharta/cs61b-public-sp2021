@@ -1,27 +1,28 @@
 public class IntList {
     public int first;
-    public IntList rest;
+    public SinglyNode rest;
 
-    public IntList(int first, IntList rest) {
+    public IntList(int first, SinglyNode rest) {
         this.first = first;
         this.rest = rest;
     }
 
     public static void main(String[] args) {
-        IntList L = new IntList(2, null);
+        SinglyNode L = new SinglyNode(2, null);
 
         System.out.println(L);
 
+        L.addSquared(5);
         L.addSquared(5);
         System.out.println(L);
     }
 
     public void addLast(int x) {
-        IntList p = this;
+        SinglyNode p = this;
         while (p.rest != null) {
             p = p.rest;
         }
-        p.rest = new IntList(x, null);
+        p.rest = new SinglyNode(x, null);
     }
 
     public String toString() {
@@ -40,7 +41,7 @@ public class IntList {
         addAdjacent(this);
     }
 
-    private void addAdjacent(IntList L) {
+    private void addAdjacent(SinglyNode L) {
         if (L.rest == null) {
             return;
         }
@@ -58,12 +59,12 @@ public class IntList {
      * each element incremented by x. L is not allowed
      * to change.
      */
-    public static IntList incrList(IntList L, int x) {
+    public static SinglyNode incrList(SinglyNode L, int x) {
         /* Your code here. */
         if (L == null) {
             return null;
         }
-        IntList Q = new IntList(L.first + x, null);
+        SinglyNode Q = new SinglyNode(L.first + x, null);
         Q.rest = incrList(L.rest, x);
         return Q;
     }
@@ -73,7 +74,7 @@ public class IntList {
      * each element incremented by x. Not allowed to use
      * the 'new' keyword.
      */
-    public static IntList dincrList(IntList L, int x) {
+    public static SinglyNode dincrList(SinglyNode L, int x) {
         /* Your code here. */
         if (L == null) {
             return null;
@@ -85,8 +86,8 @@ public class IntList {
 
 
     public void addFirst(int x) {
-        IntList oldList = new IntList(this.first, this.rest);
-        IntList newList = new IntList(x, oldList);
+        SinglyNode oldList = new SinglyNode(this.first, this.rest);
+        SinglyNode newList = new SinglyNode(x, oldList);
         this.first = newList.first;
         this.rest = newList.rest;
     }
@@ -100,17 +101,19 @@ public class IntList {
      * Additionally, you are provided the constraint that you can only access the size() function one time during the entire process of adding a node.
      */
     public void addSquared(int x) {
-        IntList squared = addSquared(x, this);
+        SinglyNode squared = addSquared(x, this);
         this.first = squared.first;
         this.rest = squared.rest;
     }
 
-    private IntList addSquared(int x, IntList L) {
+    private SinglyNode addSquared(int x, SinglyNode L) {
         if (L.rest == null) {
-            return new IntList(L.first, new IntList(L.first * 2, new IntList(x, null)));
+            L.rest = new SinglyNode(L.first * 2, new SinglyNode(x, null));
+            return L;
         }
 
-        return new IntList(L.first, new IntList(L.first * 2, addSquared(x, L.rest)));
+        L.rest = new SinglyNode(L.first * 2, addSquared(x, L.rest));
+        return L;
     }
 
     /**
@@ -127,7 +130,7 @@ public class IntList {
      * Return the size of the list using iteration
      */
     public int iterativeSize() {
-        IntList p = this;
+        SinglyNode p = this;
         int totalSize = 1;
         while (p.rest != null) {
             p = p.rest;
