@@ -29,7 +29,8 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
             return false;
         }
 
-        if (o instanceof ArrayDeque<?> otherDeque) {
+        if (o instanceof ArrayDeque) {
+            ArrayDeque<?> otherDeque = (ArrayDeque<?>) o;
             int otherDeqIdx = (otherDeque.nextFirst + 1) % otherDeque.items.length;
             for (T x : this) {
                 if (x == null && otherDeque.get(otherDeqIdx) == null) {
@@ -45,7 +46,8 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
             }
         }
 
-        if (o instanceof LinkedListDeque<?> otherDeque) {
+        if (o instanceof LinkedListDeque) {
+            LinkedListDeque<?> otherDeque = (LinkedListDeque<?>) o;
             int thisDequeIdx = (nextFirst + 1) % items.length;
             for (Object x : otherDeque) {
                 if (x == null && items[thisDequeIdx] == null) {

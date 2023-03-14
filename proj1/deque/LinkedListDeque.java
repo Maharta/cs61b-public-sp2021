@@ -161,7 +161,8 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
             return false;
         }
 
-        if (o instanceof LinkedListDeque<?> otherDeque) {
+        if (o instanceof LinkedListDeque) {
+            LinkedListDeque<?> otherDeque = (LinkedListDeque<?>) o;
             Node otherPtr = (Node) otherDeque.sentinel.next;
             for (T x : this) {
                 if (x == null && otherPtr.value == null) {
@@ -176,7 +177,8 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
             }
         }
 
-        if (o instanceof ArrayDeque<?> otherDeque) {
+        if (o instanceof ArrayDeque) {
+            ArrayDeque<?> otherDeque = (ArrayDeque<?>) o;
             Node thisPtr = sentinel.next;
             for (Object x : otherDeque) {
                 if (x == null && thisPtr.value == null) {
@@ -215,5 +217,5 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
         }
         System.out.print('\n');
     }
-    
+
 }
