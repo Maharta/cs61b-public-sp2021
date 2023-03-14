@@ -39,7 +39,7 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
 
         if (o instanceof ArrayDeque) {
             ArrayDeque<?> otherDeque = (ArrayDeque<?>) o;
-            int otherDeqIdx = (otherDeque.nextFirst + 1) % otherDeque.items.length;
+            int otherDeqIdx = 0;
             for (T x : this) {
                 if (x == null && otherDeque.get(otherDeqIdx) == null) {
                     continue;
@@ -50,7 +50,7 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
                 if (!x.equals(otherDeque.get(otherDeqIdx))) {
                     return false;
                 }
-                otherDeqIdx = (otherDeqIdx + 1) % otherDeque.items.length;
+                otherDeqIdx++;
             }
         }
 

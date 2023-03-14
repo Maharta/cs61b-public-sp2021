@@ -147,6 +147,21 @@ public class ArrayDequeTest {
         assertTrue("Should at least use 25% of the total items length for array of size 16 or bigger",
                 percentageUsed >= 0.25);
     }
+
+    /**
+     * Test deep equal method with both Deques implementation.
+     */
+    @Test
+    public void deepEqualTest() {
+
+        ArrayDeque<String> deque1 = ArrayDeque.of("a", "ab", "abc");
+        ArrayDeque<String> deque2 = ArrayDeque.of("a", "ab", "abc");
+
+        LinkedListDeque<String> llDeque = LinkedListDeque.of("a", "ab", "abc");
+
+        assertEquals(deque1, deque2);
+        assertEquals(deque1, llDeque);
+    }
 }
 
 

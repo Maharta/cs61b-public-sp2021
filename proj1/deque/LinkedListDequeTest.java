@@ -2,6 +2,8 @@ package deque;
 
 import org.junit.Test;
 
+import java.lang.reflect.Array;
+
 import static org.junit.Assert.*;
 
 
@@ -124,5 +126,21 @@ public class LinkedListDequeTest {
         for (double i = 999999; i > 500000; i--) {
             assertEquals("Should have the same value", i, (double) lld1.removeLast(), 0.0);
         }
+    }
+
+
+    /**
+     * Test deep equal method with both Deques implementation.
+     */
+    @Test
+    public void deepEqualTest() {
+
+        LinkedListDeque<String> deque1 = LinkedListDeque.of("a", "ab", "abc");
+        LinkedListDeque<String> deque2 = LinkedListDeque.of("a", "ab", "abc");
+
+        ArrayDeque<String> aDeque = ArrayDeque.of("a", "ab", "abc");
+
+        assertEquals(deque1, deque2);
+        assertEquals(deque1, aDeque);
     }
 }

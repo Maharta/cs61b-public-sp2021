@@ -174,6 +174,7 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
                 if (!x.equals(otherPtr.value)) {
                     return false;
                 }
+                otherPtr = otherPtr.next;
             }
         }
 
