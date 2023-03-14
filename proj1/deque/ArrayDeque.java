@@ -16,6 +16,53 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
         size = 0;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Deque)) {
+            return false;
+        }
+
+        if (((Deque<?>) o).size() != size) {
+            return false;
+        }
+
+        if (o instanceof ArrayDeque<?> otherDeque) {
+            int otherDeqIdx = (otherDeque.nextFirst + 1) % otherDeque.items.length;
+            for (T x : this) {
+                if (x == null && otherDeque.get(otherDeqIdx) == null) {
+                    continue;
+                }
+                if (x == null || otherDeque.get(otherDeqIdx) == null) {
+                    return false;
+                }
+                if (x.equals(otherDeque.get(otherDeqIdx))) {
+                    return false;
+                }
+                otherDeqIdx = (otherDeqIdx + 1) % otherDeque.items.length;
+            }
+        }
+
+        if (o instanceof LinkedListDeque<?> otherDeque) {
+            int thisDequeIdx = (nextFirst + 1) % items.length;
+            for (Object x : otherDeque) {
+                if (x == null && items[thisDequeIdx] == null) {
+                    continue;
+                }
+                if (x == null || items[thisDequeIdx] == null) {
+                    return false;
+                }
+                if (!x.equals(items[thisDequeIdx])) {
+                    return false;
+                }
+                thisDequeIdx = (thisDequeIdx + 1) % items.length;
+            }
+        }
+        return true;
+    }
+
     /**
      * Used for testing, do not use.
      */

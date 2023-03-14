@@ -148,27 +148,59 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
         }
     }
 
+    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof LinkedListDeque)) {
+        if (!(o instanceof Deque<?>)) {
             return false;
         }
-        LinkedListDeque<?> other = (LinkedListDeque<?>) o;
-        if (other.size != this.size) {
+
+        if (((Deque<?>) o).size() != this.size) {
             return false;
         }
-        Node thisPtr = sentinel.next;
-        Node otherPtr = (Node) other.sentinel.next;
-        while (thisPtr != sentinel) {
-            if (thisPtr.value != otherPtr.value) {
-                return false;
+
+        if (o instanceof LinkedListDeque<?> otherDeque) {
+            Node otherPtr = (Node) otherDeque.sentinel.next;
+            for (T x : this) {
+                if (x == null && otherPtr.value == null) {
+                    continue;
+                }
+                if (x == null || otherPtr.value == null) {
+                    return false;
+                }
+                if (!x.equals(otherPtr.value)) {
+                    return false;
+                }
             }
-            thisPtr = thisPtr.next;
-            otherPtr = otherPtr.next;
+        }
+
+        if (o instanceof ArrayDeque<?> otherDeque) {
+            Node thisPtr = sentinel.next;
+            for (Object x : otherDeque) {
+                if (x == null && thisPtr.value == null) {
+                    continue;
+                }
+                if (x == null || thisPtr.value == null) {
+                    return false;
+                }
+                if (!x.equals(thisPtr.value)) {
+                    return false;
+                }
+                thisPtr = thisPtr.next;
+            }
         }
         return true;
+
+    }
+
+    public static <T> LinkedListDeque<T> of(T... args) {
+        LinkedListDeque<T> deque = new LinkedListDeque<>();
+        for (T x : args) {
+            deque.addLast(x);
+        }
+        return deque;
     }
 
     public int size() {
