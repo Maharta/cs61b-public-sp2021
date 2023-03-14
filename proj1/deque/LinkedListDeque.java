@@ -1,8 +1,38 @@
 package deque;
 
+import java.util.Iterator;
 import java.util.Objects;
 
-public class LinkedListDeque<T> {
+public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
+
+    @Override
+    public Iterator<T> iterator() {
+        return new LinkedListDequeIterator();
+    }
+
+    private class LinkedListDequeIterator implements Iterator<T> {
+        int index;
+        Node ptr;
+
+        public LinkedListDequeIterator() {
+            index = 0;
+            ptr = sentinel.next;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < size;
+        }
+
+        @Override
+        public T next() {
+            T value = ptr.value;
+            ptr = ptr.next;
+            index++;
+            return value;
+        }
+    }
+
 
     private class Node {
         T value;
@@ -18,7 +48,7 @@ public class LinkedListDeque<T> {
     }
 
     private int size;
-    private Node sentinel;
+    private final Node sentinel;
 
     public LinkedListDeque() {
         sentinel = new Node(null, null, null);
@@ -141,10 +171,6 @@ public class LinkedListDeque<T> {
         return true;
     }
 
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
     public int size() {
         return size;
     }
@@ -157,36 +183,5 @@ public class LinkedListDeque<T> {
         }
         System.out.print('\n');
     }
-
-    public static void main(String[] args) {
-        LinkedListDeque<Integer> list = new LinkedListDeque<>();
-        System.out.println(list.isEmpty());
-        list.addLast(10);
-        list.addFirst(5);
-        list.addLast(99);
-        list.addFirst(7);
-        System.out.println(list.get(0));
-        System.out.println(list.get(1));
-        System.out.println(list.get(2));
-        System.out.println(list.get(3));
-        System.out.println(list.getRecursive(0));
-        System.out.println(list.getRecursive(1));
-        System.out.println(list.getRecursive(2));
-        System.out.println(list.getRecursive(3));
-        System.out.println(list.isEmpty());
-        list.removeLast();
-        list.removeFirst();
-        list.printDeque();
-
-        LinkedListDeque<String> otherList = new LinkedListDeque<>();
-        otherList.addFirst("blabal");
-        otherList.addFirst("blabal");
-        System.out.println(list.equals(otherList));
-
-        LinkedListDeque<Integer> anotherList = new LinkedListDeque<>();
-        anotherList.addFirst(10);
-        anotherList.addFirst(5);
-        System.out.println(anotherList.equals(list));
-    }
-
+    
 }

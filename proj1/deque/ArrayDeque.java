@@ -1,16 +1,26 @@
 package deque;
 
-public class ArrayDeque<T> {
+import java.util.Iterator;
+
+public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
     private int nextFirst;
     private int nextLast;
     private T[] items;
     private int size;
+
 
     public ArrayDeque() {
         items = (T[]) new Object[8];
         nextFirst = 4;
         nextLast = 5;
         size = 0;
+    }
+
+    /**
+     * Used for testing, do not use.
+     */
+    public int getTotalArrayLength() {
+        return items.length;
     }
 
     public void addLast(T item) {
@@ -53,6 +63,14 @@ public class ArrayDeque<T> {
         return items[indexToGet];
     }
 
+    public static <K> ArrayDeque<K> of(K... items) {
+        ArrayDeque<K> deque = new ArrayDeque<>();
+        for (K x : items) {
+            deque.addLast(x);
+        }
+        return deque;
+    }
+
     public T removeLast() {
         if (isEmpty()) {
             return null;
@@ -92,10 +110,6 @@ public class ArrayDeque<T> {
         return size;
     }
 
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
     public void printDeque() {
         if (isEmpty()) {
             System.out.println("ArrayDeque is empty");
@@ -108,26 +122,28 @@ public class ArrayDeque<T> {
         System.out.print("\n");
     }
 
-    public static void main(String[] args) {
-        ArrayDeque<Integer> deque = new ArrayDeque<>();
-        deque.addFirst(10);
-        deque.addLast(5);
-        deque.addLast(6);
-        deque.addLast(4);
-        deque.addFirst(9);
-        deque.addLast(20);
-        deque.addFirst(2);
-        deque.addLast(100);
-        deque.addLast(-1);
-        deque.printDeque();
-        System.out.println(deque.get(5));
-        System.out.println(deque.get(0));
-        deque.removeLast();
-        deque.removeLast();
-        deque.removeLast();
-        deque.removeLast();
-        deque.removeLast();
-        deque.removeLast();
-        deque.removeLast();
+    @Override
+    public Iterator<T> iterator() {
+        return new ArrayDequeIterator();
     }
+
+    private class ArrayDequeIterator implements Iterator<T> {
+        int i = 0;
+        int idx = (nextFirst + 1) % items.length;
+
+        @Override
+        public boolean hasNext() {
+            return i < size;
+        }
+
+        @Override
+        public T next() {
+            T value = items[idx];
+            idx = (idx + 1) % items.length;
+            i++;
+            return value;
+        }
+    }
+
+
 }
