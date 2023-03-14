@@ -3,7 +3,7 @@ package deque;
 import java.util.Iterator;
 import java.util.Objects;
 
-public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
+public class LinkedListDeque<T> implements Deque<T> {
 
     @Override
     public Iterator<T> iterator() {
@@ -14,7 +14,7 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
         int index;
         Node ptr;
 
-        public LinkedListDequeIterator() {
+        LinkedListDequeIterator() {
             index = 0;
             ptr = sentinel.next;
         }
@@ -39,7 +39,7 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
         Node next;
         Node prev;
 
-        public Node(Node prev, T value, Node next) {
+        Node(Node prev, T value, Node next) {
             this.prev = prev;
             this.value = value;
             this.next = next;
@@ -161,7 +161,19 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
             return false;
         }
 
-        if (o instanceof LinkedListDeque) {
+        Iterator<?> otherIterator = ((Deque<?>) o).iterator();
+        Iterator<T> iterator = this.iterator();
+
+        while (iterator.hasNext() && otherIterator.hasNext()) {
+            T thisVal = iterator.next();
+            Object otherVal = otherIterator.next();
+
+            if (!(thisVal.equals(otherVal))) {
+                return false;
+            }
+        }
+
+        /*if (o instanceof LinkedListDeque) {
             LinkedListDeque<?> otherDeque = (LinkedListDeque<?>) o;
             Node otherPtr = (Node) otherDeque.sentinel.next;
             for (T x : this) {
@@ -193,7 +205,7 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
                 }
                 thisPtr = thisPtr.next;
             }
-        }
+        }*/
         return true;
 
     }
@@ -218,5 +230,5 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
         }
         System.out.print('\n');
     }
-
+    
 }
