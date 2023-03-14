@@ -16,6 +16,14 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
         size = 0;
     }
 
+    public static <K> ArrayDeque<K> of(K... items) {
+        ArrayDeque<K> deque = new ArrayDeque<>();
+        for (K x : items) {
+            deque.addLast(x);
+        }
+        return deque;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -29,8 +37,7 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
             return false;
         }
 
-        if (o instanceof ArrayDeque) {
-            ArrayDeque<?> otherDeque = (ArrayDeque<?>) o;
+        if (o instanceof ArrayDeque<?> otherDeque) {
             int otherDeqIdx = (otherDeque.nextFirst + 1) % otherDeque.items.length;
             for (T x : this) {
                 if (x == null && otherDeque.get(otherDeqIdx) == null) {
@@ -39,15 +46,14 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
                 if (x == null || otherDeque.get(otherDeqIdx) == null) {
                     return false;
                 }
-                if (x.equals(otherDeque.get(otherDeqIdx))) {
+                if (!x.equals(otherDeque.get(otherDeqIdx))) {
                     return false;
                 }
                 otherDeqIdx = (otherDeqIdx + 1) % otherDeque.items.length;
             }
         }
 
-        if (o instanceof LinkedListDeque) {
-            LinkedListDeque<?> otherDeque = (LinkedListDeque<?>) o;
+        if (o instanceof LinkedListDeque<?> otherDeque) {
             int thisDequeIdx = (nextFirst + 1) % items.length;
             for (Object x : otherDeque) {
                 if (x == null && items[thisDequeIdx] == null) {
@@ -110,14 +116,6 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
         int currentFirst = nextFirst + 1 % items.length;
         int indexToGet = (currentFirst + index) % items.length;
         return items[indexToGet];
-    }
-
-    public static <K> ArrayDeque<K> of(K... items) {
-        ArrayDeque<K> deque = new ArrayDeque<>();
-        for (K x : items) {
-            deque.addLast(x);
-        }
-        return deque;
     }
 
     public T removeLast() {
