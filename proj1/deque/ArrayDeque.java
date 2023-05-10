@@ -8,7 +8,6 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
     private T[] items;
     private int size;
 
-
     public ArrayDeque() {
         items = (T[]) new Object[8];
         nextFirst = 4;
@@ -37,39 +36,32 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
             return false;
         }
 
-        if (o instanceof ArrayDeque) {
-            ArrayDeque<?> otherDeque = (ArrayDeque<?>) o;
-            int otherDeqIdx = 0;
-            for (T x : this) {
-                if (x == null && otherDeque.get(otherDeqIdx) == null) {
-                    continue;
-                }
-                if (x == null || otherDeque.get(otherDeqIdx) == null) {
-                    return false;
-                }
-                if (!x.equals(otherDeque.get(otherDeqIdx))) {
-                    return false;
-                }
-                otherDeqIdx++;
-            }
+        // if we are here, both size is the same, so checking one is sufficient.
+        if (((Deque<?>) o).size() == 0) {
+            return true;
         }
 
+        // added special case here for linkedListDeque. Used iterator instead of regular get for better perfomance.
         if (o instanceof LinkedListDeque) {
             LinkedListDeque<?> otherDeque = (LinkedListDeque<?>) o;
             int thisDequeIdx = (nextFirst + 1) % items.length;
             for (Object x : otherDeque) {
-                if (x == null && items[thisDequeIdx] == null) {
-                    continue;
-                }
-                if (x == null || items[thisDequeIdx] == null) {
-                    return false;
-                }
                 if (!x.equals(items[thisDequeIdx])) {
                     return false;
                 }
                 thisDequeIdx = (thisDequeIdx + 1) % items.length;
             }
+        } else {
+            Deque<?> oDeque = (Deque<?>) o;
+            int idx = 0;
+            while (idx < size) {
+                if (oDeque.get(idx) != this.get(idx)) {
+                    return false;
+                }
+                idx++;
+            }
         }
+
         return true;
     }
 

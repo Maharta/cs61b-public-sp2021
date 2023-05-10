@@ -2,8 +2,6 @@ package deque;
 
 import org.junit.Test;
 
-import java.lang.reflect.Array;
-
 import static org.junit.Assert.*;
 
 
@@ -12,10 +10,12 @@ import static org.junit.Assert.*;
  */
 public class LinkedListDequeTest {
 
-    @Test
-    /** Adds a few things to the list, checking isEmpty() and size() are correct,
+    /**
+     * Adds a few things to the list, checking isEmpty() and size() are correct,
      * finally printing the results.
-     * && is the "and" operation. */
+     * && is the "and" operation.
+     */
+    @Test
     public void addIsEmptySizeTest() {
 
         System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
@@ -39,8 +39,10 @@ public class LinkedListDequeTest {
         lld1.printDeque();
     }
 
+    /**
+     * Adds an item, then removes an item, and ensures that dll is empty afterwards.
+     */
     @Test
-    /** Adds an item, then removes an item, and ensures that dll is empty afterwards. */
     public void addRemoveTest() {
 
         System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
@@ -57,8 +59,10 @@ public class LinkedListDequeTest {
         assertTrue("lld1 should be empty after removal", lld1.isEmpty());
     }
 
+    /**
+     * Tests removing from an empty deque
+     */
     @Test
-    /* Tests removing from an empty deque */
     public void removeEmptyTest() {
 
         System.out.println("Make sure to uncomment the lines below (and delete this print statement).");
@@ -78,8 +82,10 @@ public class LinkedListDequeTest {
         assertEquals(errorMsg, 0, size);
     }
 
+    /**
+     * Check if you can create LinkedListDeques with different parameterized types
+     */
     @Test
-    /* Check if you can create LinkedListDeques with different parameterized types*/
     public void multipleParamTest() {
 
         LinkedListDeque<String> lld1 = new LinkedListDeque<String>();

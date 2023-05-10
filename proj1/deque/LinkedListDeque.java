@@ -161,6 +161,11 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
             return false;
         }
 
+        // if we are here, both size is the same, so checking one is sufficient;
+        if (((Deque<?>) o).size() == 0) {
+            return true;
+        }
+        // special case for LLDeque, for better perfomance. Else use default get method.
         if (o instanceof LinkedListDeque) {
             LinkedListDeque<?> otherDeque = (LinkedListDeque<?>) o;
             Node otherPtr = (Node) otherDeque.sentinel.next;
@@ -176,26 +181,17 @@ public class LinkedListDeque<T> implements Iterable<T>, Deque<T> {
                 }
                 otherPtr = otherPtr.next;
             }
-        }
-
-        if (o instanceof ArrayDeque) {
-            ArrayDeque<?> otherDeque = (ArrayDeque<?>) o;
-            Node thisPtr = sentinel.next;
-            for (Object x : otherDeque) {
-                if (x == null && thisPtr.value == null) {
-                    continue;
-                }
-                if (x == null || thisPtr.value == null) {
+        } else {
+            Deque<?> oDeque = (Deque<?>) o;
+            int index = 0;
+            for (T x : this) {
+                if (!x.equals(oDeque.get(index))) {
                     return false;
                 }
-                if (!x.equals(thisPtr.value)) {
-                    return false;
-                }
-                thisPtr = thisPtr.next;
+                index++;
             }
         }
         return true;
-
     }
 
     public static <T> LinkedListDeque<T> of(T... args) {
