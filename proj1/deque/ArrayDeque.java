@@ -39,9 +39,13 @@ public class ArrayDeque<T> implements Deque<T> {
         // if we are here, both size is the same, so checking one is sufficient.
         if (((Deque<?>) o).size() == 0) {
             return true;
+        }
+
         Iterator<?> otherIterator = ((Deque<?>) o).iterator();
         Iterator<T> iterator = this.iterator();
 
+
+        // using iterators for efficiency since LLDeque.get is not efficient for checking equality
         while (iterator.hasNext() && otherIterator.hasNext()) {
             T thisVal = iterator.next();
             Object otherVal = otherIterator.next();
@@ -68,7 +72,7 @@ public class ArrayDeque<T> implements Deque<T> {
             }
         }
 
-        // added special case here for linkedListDeque. Used iterator instead of regular get for better perfomance.
+        // added special case here for linkedListDeque. Used iterator instead of regular get for better performance.
         if (o instanceof LinkedListDeque) {
             LinkedListDeque<?> otherDeque = (LinkedListDeque<?>) o;
             int thisDequeIdx = (nextFirst + 1) % items.length;

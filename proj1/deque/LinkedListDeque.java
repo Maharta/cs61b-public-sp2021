@@ -5,56 +5,28 @@ import java.util.Objects;
 
 public class LinkedListDeque<T> implements Deque<T> {
 
-    @Override
-    public Iterator<T> iterator() {
-        return new LinkedListDequeIterator();
-    }
-
-    private class LinkedListDequeIterator implements Iterator<T> {
-        int index;
-        Node ptr;
-
-        LinkedListDequeIterator() {
-            index = 0;
-            ptr = sentinel.next;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return index < size;
-        }
-
-        @Override
-        public T next() {
-            T value = ptr.value;
-            ptr = ptr.next;
-            index++;
-            return value;
-        }
-    }
-
-
-    private class Node {
-        T value;
-        Node next;
-        Node prev;
-
-        Node(Node prev, T value, Node next) {
-            this.prev = prev;
-            this.value = value;
-            this.next = next;
-        }
-
-    }
-
-    private int size;
     private final Node sentinel;
+    private int size;
+
 
     public LinkedListDeque() {
         sentinel = new Node(null, null, null);
         sentinel.next = sentinel;
         sentinel.prev = sentinel;
         size = 0;
+    }
+
+    public static <T> LinkedListDeque<T> of(T... args) {
+        LinkedListDeque<T> deque = new LinkedListDeque<>();
+        for (T x : args) {
+            deque.addLast(x);
+        }
+        return deque;
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new LinkedListDequeIterator();
     }
 
     public void addFirst(T x) {
@@ -165,55 +137,17 @@ public class LinkedListDeque<T> implements Deque<T> {
         if (((Deque<?>) o).size() == 0) {
             return true;
         }
-        // special case for LLDeque, for better perfomance. Else use default get method.
-        if (o instanceof LinkedListDeque) {
 
-        Iterator<?> otherIterator = ((Deque<?>) o).iterator();
-        Iterator<T> iterator = this.iterator();
+        Iterator<T> thisIterator = iterator();
+        Iterator<?> otherDequeIterator = ((Deque<?>) o).iterator();
 
-        while (iterator.hasNext() && otherIterator.hasNext()) {
-            T thisVal = iterator.next();
-            Object otherVal = otherIterator.next();
-
-            if (!(thisVal.equals(otherVal))) {
+        while (thisIterator.hasNext()) {
+            if (!thisIterator.next().equals(otherDequeIterator.next())) {
                 return false;
             }
         }
 
-        /*if (o instanceof LinkedListDeque) {
-            LinkedListDeque<?> otherDeque = (LinkedListDeque<?>) o;
-            Node otherPtr = (Node) otherDeque.sentinel.next;
-            for (T x : this) {
-                if (x == null && otherPtr.value == null) {
-                    continue;
-                }
-                if (x == null || otherPtr.value == null) {
-                    return false;
-                }
-                if (!x.equals(otherPtr.value)) {
-                    return false;
-                }
-                otherPtr = otherPtr.next;
-            }
-        } else {
-            Deque<?> oDeque = (Deque<?>) o;
-            int index = 0;
-            for (T x : this) {
-                if (!x.equals(oDeque.get(index))) {
-                    return false;
-                }
-                index++;
-            }
-        }*/
         return true;
-    }
-
-    public static <T> LinkedListDeque<T> of(T... args) {
-        LinkedListDeque<T> deque = new LinkedListDeque<>();
-        for (T x : args) {
-            deque.addLast(x);
-        }
-        return deque;
     }
 
     public int size() {
@@ -228,5 +162,41 @@ public class LinkedListDeque<T> implements Deque<T> {
         }
         System.out.print('\n');
     }
-    
+
+    private class LinkedListDequeIterator implements Iterator<T> {
+        int index;
+        Node ptr;
+
+        LinkedListDequeIterator() {
+            index = 0;
+            ptr = sentinel.next;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < size;
+        }
+
+        @Override
+        public T next() {
+            T value = ptr.value;
+            ptr = ptr.next;
+            index++;
+            return value;
+        }
+    }
+
+    private class Node {
+        T value;
+        Node next;
+        Node prev;
+
+        Node(Node prev, T value, Node next) {
+            this.prev = prev;
+            this.value = value;
+            this.next = next;
+        }
+
+    }
+
 }
