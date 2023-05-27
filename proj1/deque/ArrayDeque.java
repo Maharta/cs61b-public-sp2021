@@ -2,7 +2,7 @@ package deque;
 
 import java.util.Iterator;
 
-public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
+public class ArrayDeque<T> implements Deque<T> {
     private int nextFirst;
     private int nextLast;
     private T[] items;
@@ -39,6 +39,33 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
         // if we are here, both size is the same, so checking one is sufficient.
         if (((Deque<?>) o).size() == 0) {
             return true;
+        Iterator<?> otherIterator = ((Deque<?>) o).iterator();
+        Iterator<T> iterator = this.iterator();
+
+        while (iterator.hasNext() && otherIterator.hasNext()) {
+            T thisVal = iterator.next();
+            Object otherVal = otherIterator.next();
+
+            if (!(thisVal.equals(otherVal))) {
+                return false;
+            }
+        }
+
+        /*if (o instanceof ArrayDeque) {
+            ArrayDeque<?> otherDeque = (ArrayDeque<?>) o;
+            int otherDeqIdx = 0;
+            for (T x : this) {
+                if (x == null && otherDeque.get(otherDeqIdx) == null) {
+                    continue;
+                }
+                if (x == null || otherDeque.get(otherDeqIdx) == null) {
+                    return false;
+                }
+                if (!x.equals(otherDeque.get(otherDeqIdx))) {
+                    return false;
+                }
+                otherDeqIdx++;
+            }
         }
 
         // added special case here for linkedListDeque. Used iterator instead of regular get for better perfomance.
@@ -62,6 +89,7 @@ public class ArrayDeque<T> implements Iterable<T>, Deque<T> {
             }
         }
 
+        }*/
         return true;
     }
 
