@@ -2,7 +2,7 @@ package deque;
 
 import java.util.Iterator;
 
-public class ArrayDeque<T> implements Deque<T> {
+public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     // initial value of nextFirst and nextLast can be anything, as long as it satisfy a deque contract. i choose 4 and 5 here.
     private int nextFirst;
     private int nextLast;
@@ -15,7 +15,7 @@ public class ArrayDeque<T> implements Deque<T> {
         nextLast = 5;
         size = 0;
     }
-    
+
     public static <K> ArrayDeque<K> of(K... items) {
         ArrayDeque<K> deque = new ArrayDeque<>();
         for (K x : items) {
@@ -42,18 +42,19 @@ public class ArrayDeque<T> implements Deque<T> {
             return true;
         }
 
-        Iterator<?> otherIterator = ((Deque<?>) o).iterator();
         Iterator<T> iterator = this.iterator();
+        Deque<?> otherDeque = (Deque<?>) o;
 
 
-        // using iterators for efficiency since LLDeque.get is not efficient for checking equality
-        while (iterator.hasNext() && otherIterator.hasNext()) {
+        int index = 0;
+        while (iterator.hasNext()) {
             T thisVal = iterator.next();
-            Object otherVal = otherIterator.next();
+            Object otherVal = otherDeque.get(index);
 
             if (!(thisVal.equals(otherVal))) {
                 return false;
             }
+            index++;
         }
 
         /*if (o instanceof ArrayDeque) {
