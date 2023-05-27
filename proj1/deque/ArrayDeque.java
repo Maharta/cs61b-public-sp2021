@@ -3,6 +3,7 @@ package deque;
 import java.util.Iterator;
 
 public class ArrayDeque<T> implements Deque<T> {
+    // initial value of nextFirst and nextLast can be anything, as long as it satisfy a deque contract. i choose 4 and 5 here.
     private int nextFirst;
     private int nextLast;
     private T[] items;
@@ -10,6 +11,13 @@ public class ArrayDeque<T> implements Deque<T> {
 
     public ArrayDeque() {
         items = (T[]) new Object[8];
+        nextFirst = 4;
+        nextLast = 5;
+        size = 0;
+    }
+
+    public ArrayDeque(int size) {
+        items = (T[]) new Object[size];
         nextFirst = 4;
         nextLast = 5;
         size = 0;
@@ -37,7 +45,7 @@ public class ArrayDeque<T> implements Deque<T> {
         }
 
         // if we are here, both size is the same, so checking one is sufficient.
-        if (((Deque<?>) o).size() == 0) {
+        if (isEmpty()) {
             return true;
         }
 

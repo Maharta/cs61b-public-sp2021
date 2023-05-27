@@ -134,7 +134,7 @@ public class LinkedListDeque<T> implements Deque<T> {
         }
 
         // if we are here, both size is the same, so checking one is sufficient;
-        if (((Deque<?>) o).size() == 0) {
+        if (isEmpty()) {
             return true;
         }
 
