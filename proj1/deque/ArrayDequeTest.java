@@ -162,6 +162,17 @@ public class ArrayDequeTest {
         assertEquals(deque1, deque2);
         assertEquals(deque1, llDeque);
     }
+
+    @Test
+    public void emptyEqualTest() {
+        ArrayDeque<Integer> deque1 = new ArrayDeque<>();
+        ArrayDeque<Integer> deque2 = new ArrayDeque<>();
+
+        LinkedListDeque<Integer> llDeque1 = new LinkedListDeque<>();
+
+        assertEquals(deque1, deque2);
+        assertEquals(deque1, llDeque1);
+    }
 }
 
 
