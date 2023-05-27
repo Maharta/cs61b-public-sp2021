@@ -15,14 +15,7 @@ public class ArrayDeque<T> implements Deque<T> {
         nextLast = 5;
         size = 0;
     }
-
-    public ArrayDeque(int size) {
-        items = (T[]) new Object[size];
-        nextFirst = 4;
-        nextLast = 5;
-        size = 0;
-    }
-
+    
     public static <K> ArrayDeque<K> of(K... items) {
         ArrayDeque<K> deque = new ArrayDeque<>();
         for (K x : items) {

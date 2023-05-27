@@ -1,10 +1,9 @@
 package gh2;
 
-import deque.ArrayDeque;
 import deque.Deque;
+import deque.LinkedListDeque;
 
-//Note: This file will not compile until you complete the Deque implementations
-public class GuitarString {
+public class Harp {
     /**
      * Constants. Do not change. In case you're curious, the keyword final
      * means the values cannot be changed at runtime. We'll discuss this and
@@ -18,10 +17,10 @@ public class GuitarString {
     private final int initialSize;
 
     /* Create a guitar string of the given frequency.  */
-    public GuitarString(double frequency) {
+    public Harp(double frequency) {
 
-        initialSize = (int) Math.round(SR / frequency);
-        buffer = new ArrayDeque<>();
+        initialSize = (int) Math.round((SR / frequency) / 2);
+        buffer = new LinkedListDeque<>();
         for (int i = 0; i < initialSize; i++) {
             buffer.addLast(0.0);
         }
@@ -31,6 +30,7 @@ public class GuitarString {
 
     /* Pluck the guitar string by replacing the buffer with white noise. */
     public void pluck() {
+
 
         while (!buffer.isEmpty()) {
             buffer.removeLast();
@@ -49,7 +49,7 @@ public class GuitarString {
 
         double removedFrontSample = buffer.removeFirst();
         double frontSample = buffer.get(0);
-        buffer.addLast(DECAY * (removedFrontSample + frontSample) / 2);
+        buffer.addLast(-1 * DECAY * (removedFrontSample + frontSample) / 2);
 
     }
 
