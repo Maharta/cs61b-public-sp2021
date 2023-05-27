@@ -11,6 +11,14 @@ public class MaxArrayDeque<T> extends ArrayDeque<T> {
         this.c = c;
     }
 
+    public static <K> MaxArrayDeque<K> of(Comparator<K> comparator, K... items) {
+        MaxArrayDeque<K> maxArrayDeque = new MaxArrayDeque<>(comparator);
+        for (K item : items) {
+            maxArrayDeque.addLast(item);
+        }
+        return maxArrayDeque;
+    }
+
     public T max() {
         if (isEmpty()) {
             return null;
@@ -42,5 +50,6 @@ public class MaxArrayDeque<T> extends ArrayDeque<T> {
         }
         return maxValue;
     }
+
 
 }
