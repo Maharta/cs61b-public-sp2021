@@ -3,9 +3,7 @@
  */
 public class Collatz {
 
-    /** A function to return nextNumber
-     * of Collatz sequence.
-     * @param n */
+    /** Buggy implementation of nextNumber!! */
     public static int nextNumber(int n) {
         if (n  == 128) {
             return 1;
