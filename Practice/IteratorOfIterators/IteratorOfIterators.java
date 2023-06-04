@@ -1,42 +1,36 @@
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 public class IteratorOfIterators implements Iterator<Integer> {
-    List<Iterator<Integer>> l;
-    int iteratorIdx;
+    LinkedList<Iterator<Integer>> l = new LinkedList<>();
 
     public IteratorOfIterators(List<Iterator<Integer>> l) {
-        this.l = l;
-        iteratorIdx = 0;
+        for (Iterator<Integer> iterator : l) {
+            if(iterator.hasNext()) {
+                this.l.addLast(iterator);
+            }
+        }
     }
 
     @Override
     public boolean hasNext() {
-        for (Iterator<Integer> integerIterator : l) {
-            if(integerIterator.hasNext()) {
-                return true;
-            }
-        }
-        return false;
+        return !l.isEmpty();
     }
 
-    private void moveIteratorIdx() {
-        iteratorIdx = (iteratorIdx + 1) % l.size();
-    }
 
     @Override
     public Integer next() {
         if(!hasNext()) {
-            throw new NoSuchElementException("No more items in the iterators");
+            throw new NoSuchElementException();
         }
-        while(!l.get(iteratorIdx).hasNext()) {
-            moveIteratorIdx();
+        Iterator<Integer> currIterator = l.removeFirst();
+        Integer currItem = currIterator.next();
+        if(currIterator.hasNext()) {
+            l.addLast(currIterator);
         }
-        Iterator<Integer> iterator = l.get(iteratorIdx);
-        Integer item = iterator.next();
-        moveIteratorIdx();
-        return item;
+        return currItem;
     }
 
 
