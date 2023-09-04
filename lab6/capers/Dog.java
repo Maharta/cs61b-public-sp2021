@@ -51,7 +51,12 @@ public class Dog implements Serializable {
      * @return Dog read from file
      */
     public static Dog fromFile(String name) {
-        return Utils.readObject(new File(DOG_FOLDER, name), Dog.class);
+        try {
+            return Utils.readObject(new File(DOG_FOLDER, name), Dog.class);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Can't find dog in repository with the name " + name);
+            throw new IllegalArgumentException(e.getMessage());
+        }
     }
 
     /**
