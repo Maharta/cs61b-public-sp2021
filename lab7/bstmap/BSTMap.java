@@ -101,6 +101,34 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         return currNode;
     }
 
+    private void armsLengthRecursionPut(K key, V value) {
+        if (root == null) {
+            root = new Node(key, value);
+            increaseSize();
+        }
+        armsLengthRecursionPut(key, value, root);
+    }
+
+    /*Arms length recursion, more intuitive in my head, but it's clear that the put function
+     * is easier to read. */
+    private void armsLengthRecursionPut(K key, V value, Node currNode) {
+        if (key.compareTo(currNode.key) < 0) {
+            if (currNode.left == null) {
+                currNode.left = new Node(key, value);
+                increaseSize();
+            } else {
+                armsLengthRecursionPut(key, value, currNode.left);
+            }
+        } else if (key.compareTo(currNode.key) > 0) {
+            if (currNode.right == null) {
+                currNode.right = new Node(key, value);
+                increaseSize();
+            } else {
+                armsLengthRecursionPut(key, value, currNode.right);
+            }
+        }
+    }
+
     @Override
     public Set<K> keySet() {
         Set<K> set = new HashSet<>();
