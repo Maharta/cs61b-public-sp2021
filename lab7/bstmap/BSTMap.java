@@ -1,6 +1,5 @@
 package bstmap;
 
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -21,6 +20,14 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         }
     }
 
+    private void increaseSize() {
+        size += 1;
+    }
+
+    private void decreaseSize() {
+        size -= 1;
+    }
+
     @Override
     public void clear() {
         root = null;
@@ -39,10 +46,11 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         if (currNode == null) {
             return false;
         }
-        if (key.compareTo(currNode.key) < 0) {
+        int cmp = key.compareTo(currNode.key);
+        if (cmp < 0) {
             return containsKey(key, currNode.left);
         }
-        if (key.compareTo(currNode.key) > 0) {
+        if (cmp > 0) {
             return containsKey(key, currNode.right);
         }
         // if we are here, this means a match is found and we return true.
@@ -61,10 +69,11 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         if (currNode == null) {
             return null;
         }
-        if (key.compareTo(currNode.key) < 0) {
+        int cmp = key.compareTo(currNode.key);
+        if (cmp < 0) {
             return get(key, currNode.left);
         }
-        if (key.compareTo(currNode.key) > 0) {
+        if (cmp > 0) {
             return get(key, currNode.right);
         }
         // if we are here, this means compareTo function return 0 which means we found the node for the key.
@@ -74,10 +83,6 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
     @Override
     public int size() {
         return size;
-    }
-
-    private void increaseSize() {
-        size += 1;
     }
 
     @Override
@@ -93,9 +98,10 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
             increaseSize();
             return new Node(key, value);
         }
-        if (key.compareTo(currNode.key) < 0) {
+        int cmp = key.compareTo(currNode.key);
+        if (cmp < 0) {
             currNode.left = put(key, value, currNode.left);
-        } else if (key.compareTo(currNode.key) > 0) {
+        } else if (cmp > 0) {
             currNode.right = put(key, value, currNode.right);
         }
         return currNode;
@@ -120,7 +126,62 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
     @Override
     public V remove(K key) {
-        throw new UnsupportedOperationException("Not implememented yet");
+        // this dummy node will bring the deleted value of the node, in case a node gets deleted.
+        Node removedNodeBringer = new Node(null, null);
+        root = remove(key, root, removedNodeBringer);
+        return removedNodeBringer.value;
+    }
+
+    /** Removal of a node is essentially this: remove the pointer (whether left or right) of the parent
+     * that points to the node, then the node will be collected by the garbage collection. */
+    private Node remove(K key, Node currNode, Node removedNodeBringer) {
+        if (currNode == null) {
+            return null;
+        }
+
+        int cmp = key.compareTo(currNode.key);
+        if (cmp < 0) {
+            currNode.left = remove(key, currNode.left, removedNodeBringer);
+        } else if (cmp > 0) {
+            currNode.right = remove(key, currNode.right, removedNodeBringer);
+        } else {
+            // found the node to be deleted
+            nodeCopy(currNode, removedNodeBringer);
+            decreaseSize();
+
+            // check case whether it has 0, 1, or 2 children.
+            // these 2 ifs account the case for 1 or 0 children. If it has 1 child, point the parent pointer to its child. if 0 children, this if will point it's parent pointer to null.
+            if (currNode.left == null) {
+                return currNode.right;
+            }
+            if (currNode.right == null) {
+                return currNode.left;
+            }
+            // if the node to be deleted has 2 children: copy successor (smallest value) of the right subtree -
+            // of the to be deleted node to take place of the deleted node.
+            Node min = min(currNode.right);
+            // removing min will always be case 1: 0 children or case 2: 1 children. A min key in a tree can't have 2 children (impossible)
+            remove(min.key, currNode.right, null);
+            // the successor (min from right subtree) will replace the deleted Node now.
+            nodeCopy(min, currNode);
+        }
+        return currNode;
+    }
+
+    /** finds the smallest Node of a tree or even subtree */
+    private Node min(Node root) {
+        if (root.left != null) {
+            return min(root.left);
+        }
+        return root;
+    }
+
+    private void nodeCopy(Node from, Node to) {
+        if (from == null || to == null) {
+            return;
+        }
+        to.key = from.key;
+        to.value = from.value;
     }
 
     @Override
