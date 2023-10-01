@@ -112,10 +112,17 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         }
     }
 
+    private boolean isBucketEmpty(Collection<Node> bucket) {
+        return bucket == null || bucket.isEmpty();
+    }
+
     @Override
     public boolean containsKey(K key) {
         int index = getIndexFromHashCode(key.hashCode());
         Collection<Node> bucket = buckets[index];
+        if (isBucketEmpty(bucket)) {
+            return false;
+        }
         for (Node node : bucket) {
             if (node.key.equals(key)) {
                 return true;
@@ -128,6 +135,9 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     public V get(K key) {
         int index = getIndexFromHashCode(key.hashCode());
         Collection<Node> bucket = buckets[index];
+        if (isBucketEmpty(bucket)) {
+            return null;
+        }
         for (Node node : bucket) {
             if (node.key.equals(key)) {
                 return node.value;
@@ -188,6 +198,8 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         return new MyHashMapIterator();
     }
 
+
+
     private class MyHashMapIterator implements Iterator<K> {
         private int cursor;
         private int bucketIndex;
@@ -231,9 +243,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
             return null;
         }
 
-        private boolean isBucketEmpty(Collection<Node> bucket) {
-            return bucket == null || bucket.isEmpty();
-        }
+
 
 
     }
