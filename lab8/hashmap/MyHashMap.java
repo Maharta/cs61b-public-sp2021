@@ -1,6 +1,6 @@
 package hashmap;
 
-import java.util.Collection;
+import java.util.*;
 
 /**
  *  A hash table-backed Map implementation. Provides amortized constant time
@@ -28,11 +28,18 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     /* Instance Variables */
     private Collection<Node>[] buckets;
     // You should probably define some more!
+    private double loadFactor = 0.75;
+    private int size;  // actual total item inside.
 
     /** Constructors */
-    public MyHashMap() { }
+    public MyHashMap() {
+        int initialSize = 16;
+        buckets = createTable(initialSize);
+    }
 
-    public MyHashMap(int initialSize) { }
+    public MyHashMap(int initialSize) {
+        buckets = createTable(initialSize);
+    }
 
     /**
      * MyHashMap constructor that creates a backing array of initialSize.
@@ -41,13 +48,16 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
      * @param initialSize initial size of backing array
      * @param maxLoad maximum load factor
      */
-    public MyHashMap(int initialSize, double maxLoad) { }
+    public MyHashMap(int initialSize, double maxLoad) {
+        loadFactor = maxLoad;
+        buckets = createTable(initialSize);
+    }
 
     /**
      * Returns a new node to be placed in a hash table bucket
      */
     private Node createNode(K key, V value) {
-        return null;
+        return new Node(key, value);
     }
 
     /**
@@ -69,7 +79,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
      * OWN BUCKET DATA STRUCTURES WITH THE NEW OPERATOR!
      */
     protected Collection<Node> createBucket() {
-        return null;
+        return new LinkedList<>();
     }
 
     /**
@@ -82,10 +92,160 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
      * @param tableSize the size of the table to create
      */
     private Collection<Node>[] createTable(int tableSize) {
-        return null;
+        return new Collection[tableSize];
     }
 
     // TODO: Implement the methods of the Map61B Interface below
     // Your code won't compile until you do so!
+
+    private int getIndexFromHashCode(int hashCode) {
+        // use floorMod instead of % to avoid weird case like negative mod.
+        // ex : we want -1 % 4 to be 3 instead of -1, that doesn't fit index.
+        return Math.floorMod(hashCode, buckets.length);
+    }
+
+    @Override
+    public void clear() {
+        size = 0;
+        for (int i = 0; i < buckets.length; i++) {
+            buckets[i] = null;
+        }
+    }
+
+    @Override
+    public boolean containsKey(K key) {
+        int index = getIndexFromHashCode(key.hashCode());
+        Collection<Node> bucket = buckets[index];
+        for (Node node : bucket) {
+            if (node.key.equals(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public V get(K key) {
+        int index = getIndexFromHashCode(key.hashCode());
+        Collection<Node> bucket = buckets[index];
+        for (Node node : bucket) {
+            if (node.key.equals(key)) {
+                return node.value;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
+    public void put(K key, V value) {
+        int index = getIndexFromHashCode(key.hashCode());
+        Collection<Node> bucket = buckets[index];
+        if (bucket == null) {
+            bucket = createBucket();
+            buckets[index] = bucket;
+        }
+        for (Node node : bucket) {
+            if (node.key.equals(key)) {
+                node.value = value;
+                return;
+            }
+        }
+        bucket.add(createNode(key, value));
+        size++;
+    }
+
+    @Override
+    public Set<K> keySet() {
+        Set<K> keySet = new HashSet<>();
+        for (Collection<Node> currBucket : buckets) {
+            if (currBucket == null) {
+                continue;
+            }
+            for (Node node : currBucket) {
+                keySet.add(node.key);
+            }
+        }
+        return keySet;
+    }
+
+    @Override
+    public V remove(K key) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public V remove(K key, V value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterator<K> iterator() {
+        return new MyHashMapIterator();
+    }
+
+    private class MyHashMapIterator implements Iterator<K> {
+        private int cursor;
+        private int bucketIndex;
+        private Iterator<Node> bucketIterator;
+
+        public MyHashMapIterator() {
+            cursor = 0;
+            bucketIndex = -1;
+            bucketIterator = nextNonEmptyIterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return cursor < size;
+        }
+
+        @Override
+        public K next() {
+            if (bucketIterator.hasNext()) {
+                Node node = bucketIterator.next();
+                cursor++;
+                return node.key;
+            } else {
+                bucketIterator = nextNonEmptyIterator();
+                return next();
+            }
+        }
+
+        /** Return the next possible non-empty iterator.
+         * if there's no non-empty iterator left, return null. */
+        private Iterator<Node> nextNonEmptyIterator(){
+            bucketIndex++;
+            Collection<Node> bucket = buckets[bucketIndex];
+            while(isBucketEmpty(bucket) && bucketIndex < buckets.length - 1) {
+                bucketIndex++;
+                bucket = buckets[bucketIndex];
+            }
+            if (bucket != null && bucket.iterator().hasNext()) {
+                return bucket.iterator();
+            }
+            return null;
+        }
+
+        private boolean isBucketEmpty(Collection<Node> bucket) {
+            return bucket == null || bucket.isEmpty();
+        }
+
+
+    }
+    public static void main(String[] args) {
+        MyHashMap<String, Integer> hashMap = new MyHashMap<>();
+        hashMap.put("Bla", 12);
+        hashMap.put("Bleh", 13);
+        System.out.println(hashMap.size);
+        for (String s : hashMap) {
+            System.out.println(s);
+        }
+
+    }
 
 }
