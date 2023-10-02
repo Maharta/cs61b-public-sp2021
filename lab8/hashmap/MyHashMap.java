@@ -23,12 +23,33 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
             key = k;
             value = v;
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+            Node otherNode = (Node) obj;
+
+            return key.equals(otherNode.key);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(key);
+        }
     }
+
+
 
     /* Instance Variables */
     private Collection<Node>[] buckets;
     // You should probably define some more!
-    private double loadFactor = 0.75;
+    private double maxLoadFactor = 0.75;
+    private double loadFactorToResizeDown = 0.125;
     private int size;  // actual total item inside.
 
     /** Constructors */
@@ -49,7 +70,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
      * @param maxLoad maximum load factor
      */
     public MyHashMap(int initialSize, double maxLoad) {
-        loadFactor = maxLoad;
+        maxLoadFactor = maxLoad;
         buckets = createTable(initialSize);
     }
 
@@ -95,9 +116,6 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         return new Collection[tableSize];
     }
 
-    // TODO: Implement the methods of the Map61B Interface below
-    // Your code won't compile until you do so!
-
     private int getIndexFromHashCode(int hashCode) {
         // use floorMod instead of % to avoid weird case like negative mod.
         // ex : we want -1 % 4 to be 3 instead of -1, that doesn't fit index.
@@ -112,7 +130,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         }
     }
 
-    private boolean isBucketEmpty(Collection<Node> bucket) {
+    private boolean isBucketEmptyOrNull(Collection<Node> bucket) {
         return bucket == null || bucket.isEmpty();
     }
 
@@ -120,22 +138,17 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     public boolean containsKey(K key) {
         int index = getIndexFromHashCode(key.hashCode());
         Collection<Node> bucket = buckets[index];
-        if (isBucketEmpty(bucket)) {
+        if (isBucketEmptyOrNull(bucket)) {
             return false;
         }
-        for (Node node : bucket) {
-            if (node.key.equals(key)) {
-                return true;
-            }
-        }
-        return false;
+        return bucket.contains(createNode(key, null));
     }
 
     @Override
     public V get(K key) {
         int index = getIndexFromHashCode(key.hashCode());
         Collection<Node> bucket = buckets[index];
-        if (isBucketEmpty(bucket)) {
+        if (isBucketEmptyOrNull(bucket)) {
             return null;
         }
         for (Node node : bucket) {
@@ -144,6 +157,20 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
             }
         }
         return null;
+    }
+
+    private void resize(float resizeFactor) {
+        size = 0;
+        Collection<Node>[] oldTable = buckets;
+        buckets = new Collection[(int) Math.ceil(oldTable.length * resizeFactor)];
+        for (Collection<Node> bucket : oldTable) {
+            if (isBucketEmptyOrNull(bucket)) {
+                continue;
+            }
+            for (Node node : bucket) {
+                put(node.key, node.value);
+            }
+        }
     }
 
     @Override
@@ -167,7 +194,43 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         }
         bucket.add(createNode(key, value));
         size++;
+
+        if (currentLoadFactor() >= maxLoadFactor) {
+            resize(2);
+        }
     }
+
+    private double currentLoadFactor() {
+        return (double) size / buckets.length;
+    }
+
+
+    @Override
+    public V remove(K key) {
+        int index = getIndexFromHashCode(key.hashCode());
+        Collection<Node> bucket = buckets[index];
+        V val = get(key);
+        bucket.remove(createNode(key, null));
+        if (currentLoadFactor() <= loadFactorToResizeDown) {
+            resize(0.5F);
+        }
+        return val;
+    }
+
+    @Override
+    public V remove(K key, V value) {
+        int index = getIndexFromHashCode(key.hashCode());
+        Collection<Node> bucket = buckets[index];
+        V val = get(key);
+        if (val.equals(value)) {
+            bucket.remove(createNode(key, value));
+        }
+        if (currentLoadFactor() <= loadFactorToResizeDown) {
+            resize(0.5F);
+        }
+        return val;
+    }
+
 
     @Override
     public Set<K> keySet() {
@@ -184,21 +247,9 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     @Override
-    public V remove(K key) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public V remove(K key, V value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Iterator<K> iterator() {
         return new MyHashMapIterator();
     }
-
-
 
     private class MyHashMapIterator implements Iterator<K> {
         private int cursor;
@@ -233,7 +284,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         private Iterator<Node> nextNonEmptyIterator(){
             bucketIndex++;
             Collection<Node> bucket = buckets[bucketIndex];
-            while(isBucketEmpty(bucket) && bucketIndex < buckets.length - 1) {
+            while(isBucketEmptyOrNull(bucket) && bucketIndex < buckets.length - 1) {
                 bucketIndex++;
                 bucket = buckets[bucketIndex];
             }
@@ -248,9 +299,16 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
 
     }
     public static void main(String[] args) {
-        MyHashMap<String, Integer> hashMap = new MyHashMap<>();
+        MyHashMap<String, Integer> hashMap = new MyHashMap<>(4);
         hashMap.put("Bla", 12);
         hashMap.put("Bleh", 13);
+        hashMap.put("Richa", 13);
+        System.out.println(hashMap.containsKey("Bla"));
+        System.out.println(hashMap.containsKey("bla"));
+        System.out.println(hashMap.containsKey("Bleh"));
+        System.out.println(hashMap.containsKey("Richa"));
+
+
         System.out.println(hashMap.size);
         for (String s : hashMap) {
             System.out.println(s);
