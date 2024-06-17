@@ -14,6 +14,9 @@ import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Formatter;
 import java.util.List;
@@ -235,5 +238,16 @@ class Utils {
     static void message(String msg, Object... args) {
         System.out.printf(msg, args);
         System.out.println();
+    }
+
+    static String getUnixEpoch() {
+        // Get the earliest epoch time
+        Instant epoch = Instant.EPOCH;
+
+        // Define a custom formatter to convert the epoch to the desired string format
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss 'UTC', EEEE, d MMMM yyyy")
+                .withZone(ZoneId.of("UTC"));
+
+        return formatter.format(epoch);
     }
 }
