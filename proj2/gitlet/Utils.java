@@ -250,4 +250,11 @@ class Utils {
 
         return formatter.format(epoch);
     }
+
+    public static void printThenExit(String message) {
+        System.out.println(message);
+        System.exit(0);
+    }
+
+
 }

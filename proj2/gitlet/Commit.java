@@ -25,20 +25,24 @@ public class Commit implements Serializable {
     public String date;
     public String author;
     public List<String> parentCommits;
-    public Map<String, String> fileBlobMap;
+
+    /**
+     * contains mapping between fileName and sha1 string of the blob
+     */
+    public Map<String, String> fileBlobsha1Map;
     public String message;
 
-    public Commit(String date, String author, List<String> parentCommits, Map<String, String> fileBlobMap, String message) {
+    public Commit(String date, String author, List<String> parentCommits, Map<String, String> fileBlobsha1Map, String message) {
         this.date = date;
         this.author = author;
         this.parentCommits = parentCommits;
-        this.fileBlobMap = fileBlobMap;
+        this.fileBlobsha1Map = fileBlobsha1Map;
         this.message = message;
     }
 
-    public Commit(String date, Map<String, String> fileBlobMap, List<String> parentCommits, String message) {
+    public Commit(String date, Map<String, String> fileBlobsha1Map, List<String> parentCommits, String message) {
         this.date = date;
-        this.fileBlobMap = fileBlobMap;
+        this.fileBlobsha1Map = fileBlobsha1Map;
         this.parentCommits = parentCommits;
         this.message = message;
     }
@@ -51,7 +55,7 @@ public class Commit implements Serializable {
         for (String parentCommit : parentCommits) {
             sb.append(parentCommit);
         }
-        for (Map.Entry<String, String> stringStringEntry : fileBlobMap.entrySet()) {
+        for (Map.Entry<String, String> stringStringEntry : fileBlobsha1Map.entrySet()) {
             sb.append(stringStringEntry.getKey()).append(stringStringEntry.getValue());
         }
         sb.append(message);

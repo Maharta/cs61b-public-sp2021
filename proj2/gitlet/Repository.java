@@ -17,12 +17,14 @@ import java.util.HashMap;
 public class Repository {
     /**
      * TODO: add instance variables here.
-     *
+     * <p>
+     * <p>
      * List all instance variables of the Repository class here with a useful
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided two examples for you.
      */
 
+    static HashMap<String, String> stagingAreaMap;
     /**
      * The current working directory.
      */
@@ -35,27 +37,49 @@ public class Repository {
 
     public static final File COMMIT_DIR = Utils.join(GITLET_DIR, "commits");
     public static final File BLOB_DIR = Utils.join(GITLET_DIR, "blobs");
+    public static final File STAGING_BLOB_DIR = Utils.join(BLOB_DIR, "staging");
+
+    private static String MASTER_BRANCH = "master";
 
     /* TODO: fill in the rest of this class. */
     public static void setupPersistence() {
         if (!GITLET_DIR.exists()) {
-            GITLET_DIR.mkdir();
+            boolean success = GITLET_DIR.mkdir();
+            if (!success) throw Utils.error("Failed to make GITLET_DIR");
         }
         if (!BRANCH_DIR.exists()) {
-            BRANCH_DIR.mkdir();
+            boolean success = BRANCH_DIR.mkdirs();
+            if (!success) throw Utils.error("Failed to make BRANCH_DIR");
         }
         if (!COMMIT_DIR.exists()) {
-            COMMIT_DIR.mkdir();
+            boolean success = COMMIT_DIR.mkdir();
+            if (!success) throw Utils.error("Failed to make COMMIT_DIR");
         }
         if (!BLOB_DIR.exists()) {
-            BLOB_DIR.mkdir();
+            boolean success = BLOB_DIR.mkdir();
+            if (!success) throw Utils.error("Failed to make BLOB_DIR");
         }
+        if (!STAGING_BLOB_DIR.exists()) {
+            boolean success = STAGING_BLOB_DIR.mkdir();
+            if (!success) throw Utils.error("Failed to make STAGING_BLOB_DIR");
+        }
+
         Commit commit = new Commit(Utils.getUnixEpoch(), new HashMap<>(), new ArrayList<>(), "initial commit");
         String sha1 = Utils.sha1(commit.toString());
         Utils.writeObject(Utils.join(COMMIT_DIR, sha1), commit);
-        Utils.writeContents(Utils.join(BRANCH_DIR, "master"), sha1);
-
+        Utils.writeContents(Utils.join(BRANCH_DIR, MASTER_BRANCH), sha1);
+        // make HEAD persistent pointer and point it to refs/branches/master
+        Utils.writeContents(Utils.join(GITLET_DIR, "HEAD"), "ref:refs/branches/master");
+        // make STAGING file to keep track of what files are in the staging area.
+        Utils.writeObject(Utils.join(GITLET_DIR, "STAGING"), new HashMap<>());
     }
 
 
+    public static void populateStagingAreaMap() {
+        stagingAreaMap = Utils.readObject(Utils.join(GITLET_DIR, "STAGING"), HashMap.class);
+    }
+
+    public static void persistStagingAreaMap() {
+        Utils.writeObject(Utils.join(GITLET_DIR, "STAGING"), stagingAreaMap);
+    }
 }
