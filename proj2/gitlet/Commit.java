@@ -3,7 +3,7 @@ package gitlet;
 // TODO: any imports you need here
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -13,7 +13,7 @@ import java.util.Map;
  *
  * @author TODO
  */
-public class Commit implements Serializable {
+public class Commit implements Serializable, Dumpable {
     /**
      * <p>
      * List all instance variables of the Commit class here with a useful
@@ -22,9 +22,9 @@ public class Commit implements Serializable {
      */
 
 
-    public String date;
+    public Date date;
     public String author;
-    public List<String> parentCommits;
+    public String parentCommit;
 
     /**
      * contains mapping between fileName and sha1 string of the blob
@@ -32,18 +32,18 @@ public class Commit implements Serializable {
     public Map<String, String> fileBlobsha1Map;
     public String message;
 
-    public Commit(String date, String author, List<String> parentCommits, Map<String, String> fileBlobsha1Map, String message) {
+    public Commit(Date date, String author, String parentCommit, Map<String, String> fileBlobsha1Map, String message) {
         this.date = date;
         this.author = author;
-        this.parentCommits = parentCommits;
+        this.parentCommit = parentCommit;
         this.fileBlobsha1Map = fileBlobsha1Map;
         this.message = message;
     }
 
-    public Commit(String date, Map<String, String> fileBlobsha1Map, List<String> parentCommits, String message) {
+    public Commit(Date date, Map<String, String> fileBlobsha1Map, String parentCommit, String message) {
         this.date = date;
         this.fileBlobsha1Map = fileBlobsha1Map;
-        this.parentCommits = parentCommits;
+        this.parentCommit = parentCommit;
         this.message = message;
     }
 
@@ -52,14 +52,19 @@ public class Commit implements Serializable {
         StringBuilder sb = new StringBuilder();
         sb.append(date);
         sb.append(author);
-        for (String parentCommit : parentCommits) {
-            sb.append(parentCommit);
-        }
+        sb.append(parentCommit);
         for (Map.Entry<String, String> stringStringEntry : fileBlobsha1Map.entrySet()) {
             sb.append(stringStringEntry.getKey()).append(stringStringEntry.getValue());
         }
         sb.append(message);
 
         return sb.toString();
+    }
+
+    @Override
+    public void dump() {
+        System.out.println(parentCommit);
+        System.out.println(message);
+        System.out.println(fileBlobsha1Map);
     }
 }
