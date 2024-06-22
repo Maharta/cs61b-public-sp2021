@@ -1,10 +1,14 @@
 package gitlet;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 
-import static gitlet.Repository.*;
 
 public class Gitlet {
 
@@ -27,7 +31,7 @@ public class Gitlet {
      * removal (see gitlet rm), if it was at the time of the command.
      */
     public static void handleAdd(String fileName) {
-        File file = Utils.join(CWD, fileName);
+        File file = Utils.join(Repository.CWD, fileName);
         if (!file.exists()) {
             throw Utils.error("File does not exist.");
         }
@@ -36,44 +40,100 @@ public class Gitlet {
         String fileContent = Utils.readContentsAsString(file);
         String sha1 = Utils.sha1(fileContent);
 
-
-        if (stagingAreaMap.get(fileName) == null) {
+        if (Repository.stagingAreaMap.get(fileName) == null) {
             // file not staged yet
             if (Objects.equals(commitFileSha1Map.get(fileName), sha1)) {
                 // working directory identical to current commit
                 return;
             }
-            Utils.writeContents(Utils.join(STAGING_BLOB_DIR, sha1), fileContent);
-            stagingAreaMap.put(fileName, sha1);
-            persistStagingAreaMap();
+            Utils.writeContents(Utils.join(Repository.STAGING_BLOB_DIR, sha1), fileContent);
+            Repository.stagingAreaMap.put(fileName, sha1);
+            Repository.persistStagingAreaMap();
         } else {
             // staged file identical to file added
-            if (Objects.equals(stagingAreaMap.get(fileName), sha1)) {
+            if (Objects.equals(Repository.stagingAreaMap.get(fileName), sha1)) {
                 return;
             }
             if (Objects.equals(commitFileSha1Map.get(fileName), sha1)) {
                 // staged, but added back and contents are the same as curr commit
-                stagingAreaMap.remove(fileName);
-                persistStagingAreaMap();
+                Repository.stagingAreaMap.remove(fileName);
+                Repository.persistStagingAreaMap();
             } else {
                 // staged, but different contents.
-                Utils.writeContents(Utils.join(STAGING_BLOB_DIR, sha1), fileContent);
-                stagingAreaMap.put(fileName, sha1);
-                persistStagingAreaMap();
+                Utils.writeContents(Utils.join(Repository.STAGING_BLOB_DIR, sha1), fileContent);
+                Repository.stagingAreaMap.put(fileName, sha1);
+                Repository.persistStagingAreaMap();
             }
         }
     }
 
+    /**
+     * Handles commit given by user.
+     * Invariants:
+     * 1. files that is in the staging area is different from the file on the current commit.
+     * 2. commitMessage is not empty
+     */
+    public static void handleCommit(String commitMessage) {
+        if (Repository.stagingAreaMap.isEmpty()) {
+            throw Utils.error("No changes added to the commit");
+        }
+        // get current commit from the branch
+        Commit current = getCurrentCommit();
+        //modify currentCommit to newCommit, link newCommit parent to current
+        Commit newCommit = commit(current, commitMessage);
+        // persist new Commit
+        Repository.persistCommit(newCommit, getCurrentBranch());
+
+        // delete all the unnecessary files left in the staging-blob
+        Repository.removeFilesFromStagingArea();
+
+        // clean stagingAreaMap and persist the changes
+        Repository.stagingAreaMap.clear();
+        Repository.persistStagingAreaMap();
+    }
+
+    private static Commit commit(Commit currentCommit, String message) {
+        String parentSha1 = Utils.sha1(currentCommit.toString());
+
+        Repository.stagingAreaMap.forEach((key, value) -> {
+            // update commit fileBlobSha1Map with the staged files.
+            currentCommit.fileBlobsha1Map.put(key, value);
+            // mpve the file from the staging-blob to blob
+            try {
+                Files.move(Paths.get(Repository.STAGING_BLOB_DIR.toString(), value),
+                        Paths.get(Repository.BLOB_DIR.toString(), value),
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw Utils.error("Error moving file from staging-blob area to blob area.");
+            }
+        });
+        currentCommit.date = new Date();
+        currentCommit.parentCommit = parentSha1;
+        currentCommit.message = message;
+        return currentCommit;
+    }
+
     private static Commit getCurrentCommit() {
-        String HEAD = Utils.readContentsAsString(Utils.join(CWD, ".gitlet", "HEAD"));
+        return Utils.readObject(Utils.join(Repository.COMMIT_DIR, getCurrentCommitHash()), Commit.class);
+    }
+
+    private static String getCurrentCommitHash() {
+        String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
         String commitHash = "";
         if (HEAD.startsWith("ref:")) {
             String branchPath = HEAD.split(":")[1];
-            commitHash = Utils.readContentsAsString(Utils.join(GITLET_DIR, branchPath));
+            commitHash = Utils.readContentsAsString(Utils.join(Repository.GITLET_DIR, branchPath));
         } else {
             commitHash = HEAD;
         }
-        return Utils.readObject(Utils.join(COMMIT_DIR, commitHash), Commit.class);
+
+        return commitHash;
+    }
+
+    private static String getCurrentBranch() {
+        String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
+        String branchPath = HEAD.split(":")[1];
+        return Utils.getLastSegment(branchPath);
     }
 
 }

@@ -26,6 +26,10 @@ public class Main {
                     validateGitletRepository();
                     Gitlet.handleAdd(args[1]);
                     break;
+                case "commit":
+                    validateGitletRepository();
+                    Gitlet.handleCommit(args[1]);
+                    break;
                 default:
                     System.out.println("No command with that name exists.");
                     break;
@@ -55,6 +59,10 @@ public class Main {
                     throw Utils.error("Incorrect operands.");
                 }
                 break;
+            case "commit":
+                if (args.length != 2 || args[1].isBlank()) {
+                    throw Utils.error("Please enter a commit message.");
+                }
         }
     }
 }

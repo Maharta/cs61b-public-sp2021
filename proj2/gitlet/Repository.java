@@ -1,8 +1,8 @@
 package gitlet;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 
 // TODO: any imports you need here
@@ -39,7 +39,7 @@ public class Repository {
     public static final File BLOB_DIR = Utils.join(GITLET_DIR, "blobs");
     public static final File STAGING_BLOB_DIR = Utils.join(BLOB_DIR, "staging");
 
-    private static String MASTER_BRANCH = "master";
+    public static String MASTER_BRANCH = "master";
 
     /* TODO: fill in the rest of this class. */
     public static void setupPersistence() {
@@ -64,10 +64,9 @@ public class Repository {
             if (!success) throw Utils.error("Failed to make STAGING_BLOB_DIR");
         }
 
-        Commit commit = new Commit(Utils.getUnixEpoch(), new HashMap<>(), new ArrayList<>(), "initial commit");
+        Commit commit = new Commit(Utils.getUnixEpoch(), new HashMap<>(), null, "initial commit");
         String sha1 = Utils.sha1(commit.toString());
-        Utils.writeObject(Utils.join(COMMIT_DIR, sha1), commit);
-        Utils.writeContents(Utils.join(BRANCH_DIR, MASTER_BRANCH), sha1);
+        persistCommit(commit, sha1, MASTER_BRANCH);
         // make HEAD persistent pointer and point it to refs/branches/master
         Utils.writeContents(Utils.join(GITLET_DIR, "HEAD"), "ref:refs/branches/master");
         // make STAGING file to keep track of what files are in the staging area.
@@ -81,5 +80,26 @@ public class Repository {
 
     public static void persistStagingAreaMap() {
         Utils.writeObject(Utils.join(GITLET_DIR, "STAGING"), stagingAreaMap);
+    }
+
+    public static void persistCommit(Commit commit, String branch) {
+        String sha1 = Utils.sha1(commit.toString());
+        Utils.writeObject(Utils.join(COMMIT_DIR, sha1), commit);
+        // update branch pointer
+        Utils.writeContents(Utils.join(BRANCH_DIR, branch), sha1);
+    }
+
+    public static void persistCommit(Commit commit, String commitHash, String branch) {
+        Utils.writeObject(Utils.join(COMMIT_DIR, commitHash), commit);
+        // update branch pointer
+        Utils.writeContents(Utils.join(BRANCH_DIR, branch), commitHash);
+    }
+
+    public static void removeFilesFromStagingArea() {
+        for (File file : Objects.requireNonNull(STAGING_BLOB_DIR.listFiles())) {
+            if (!file.isDirectory()) {
+                file.delete();
+            }
+        }
     }
 }

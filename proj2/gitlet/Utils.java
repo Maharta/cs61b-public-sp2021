@@ -14,10 +14,10 @@ import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Formatter;
 import java.util.List;
 
@@ -240,18 +240,24 @@ class Utils {
         System.out.println();
     }
 
-    static String getUnixEpoch() {
+    static Date getUnixEpoch() {
         // Get the earliest epoch time
         Instant epoch = Instant.EPOCH;
-
-        // Define a custom formatter to convert the epoch to the desired string format
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss 'UTC', EEEE, d MMMM yyyy")
-                .withZone(ZoneId.of("UTC"));
-
-        return formatter.format(epoch);
+        // Convert Instant to Date
+        return Date.from(epoch);
     }
 
-    public static void printThenExit(String message) {
+    static DateTimeFormatter dateTimeFormatter() {
+        String pattern = "EEE MMM dd HH:mm:ss yyyy Z";
+        return DateTimeFormatter.ofPattern(pattern);
+    }
+
+    static String getLastSegment(String input) {
+        int lastSlashIndex = input.lastIndexOf('/');
+        return (lastSlashIndex != -1) ? input.substring(lastSlashIndex + 1) : input;
+    }
+
+    static void printThenExit(String message) {
         System.out.println(message);
         System.exit(0);
     }
