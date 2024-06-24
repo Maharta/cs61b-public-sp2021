@@ -66,5 +66,6 @@ public class Commit implements Serializable, Dumpable {
         System.out.println(parentCommit);
         System.out.println(message);
         System.out.println(fileBlobsha1Map);
+        System.out.println(date);
     }
 }
