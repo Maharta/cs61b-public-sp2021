@@ -64,6 +64,7 @@ public class Main {
                 }
                 break;
             case "commit":
+            case "rm":
                 if (args.length != 2 || args[1].isBlank()) {
                     throw Utils.error("Please enter a commit message.");
                 }
