@@ -74,25 +74,27 @@ public class Gitlet {
      * 2. commitMessage is not empty
      */
     public static void handleCommit(String commitMessage) {
-        if (Repository.stagingAreaMap.isEmpty()) {
+        if (Repository.stagingAreaMap.isEmpty() && Repository.stagingRemovalMap.isEmpty()) {
             throw Utils.error("No changes added to the commit");
         }
         // get current commit from the branch
         Commit current = getCurrentCommit();
         //modify currentCommit to newCommit, link newCommit parent to current
-        Commit newCommit = commit(current, commitMessage);
+        Commit newCommit = newCommit(current, commitMessage);
         // persist new Commit
         Repository.persistCommit(newCommit, getCurrentBranch());
 
         // delete all the unnecessary files left in the staging-blob
         Repository.removeFilesFromStagingArea();
 
-        // clean stagingAreaMap and persist the changes
+        // clean staging area and persist the changes
         Repository.stagingAreaMap.clear();
+        Repository.stagingRemovalMap.clear();
         Repository.persistStagingAreaMap();
+
     }
 
-    private static Commit commit(Commit currentCommit, String message) {
+    private static Commit newCommit(Commit currentCommit, String message) {
         String parentSha1 = Utils.sha1(currentCommit.toString());
 
         Repository.stagingAreaMap.forEach((key, value) -> {
@@ -107,10 +109,38 @@ public class Gitlet {
                 throw Utils.error("Error moving file from staging-blob area to blob area.");
             }
         });
+
+        Repository.stagingRemovalMap.forEach((key, value) -> {
+            // update commit fileBlobSha1Map with rm-ed files.
+            currentCommit.fileBlobsha1Map.remove(key);
+        });
+
         currentCommit.date = new Date();
         currentCommit.parentCommit = parentSha1;
         currentCommit.message = message;
         return currentCommit;
+    }
+
+    public static void handleRm(String fileName) {
+        Commit commit = getCurrentCommit();
+        if (Repository.stagingAreaMap.get(fileName) == null && commit.fileBlobsha1Map.get(fileName) == null) {
+            throw Utils.error("No reason to remove the file.");
+        }
+
+        if (Repository.stagingAreaMap.get(fileName) != null) {
+            Repository.stagingAreaMap.remove(fileName);
+            Repository.persistStagingAreaMap();
+            return;
+        }
+
+        if (commit.fileBlobsha1Map.get(fileName) != null) {
+            Repository.stagingRemovalMap.put(fileName, null);
+            Repository.persistStagingAreaMap();
+            if (Utils.join(Repository.CWD, fileName).exists()) {
+                File file = new File(fileName);
+                file.delete();
+            }
+        }
     }
 
     private static Commit getCurrentCommit() {
@@ -135,5 +165,6 @@ public class Gitlet {
         String branchPath = HEAD.split(":")[1];
         return Utils.getLastSegment(branchPath);
     }
+
 
 }

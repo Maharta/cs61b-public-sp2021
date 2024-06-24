@@ -25,6 +25,7 @@ public class Repository {
      */
 
     static HashMap<String, String> stagingAreaMap;
+    static HashMap<String, String> stagingRemovalMap;
     /**
      * The current working directory.
      */
@@ -71,15 +72,19 @@ public class Repository {
         Utils.writeContents(Utils.join(GITLET_DIR, "HEAD"), "ref:refs/branches/master");
         // make STAGING file to keep track of what files are in the staging area.
         Utils.writeObject(Utils.join(GITLET_DIR, "STAGING"), new HashMap<>());
+        // make RM file to keep track of what files are staged for removal
+        Utils.writeObject(Utils.join(GITLET_DIR, "RM"), new HashMap<>());
     }
 
 
     public static void populateStagingAreaMap() {
         stagingAreaMap = Utils.readObject(Utils.join(GITLET_DIR, "STAGING"), HashMap.class);
+        stagingRemovalMap = Utils.readObject(Utils.join(GITLET_DIR, "RM"), HashMap.class);
     }
 
     public static void persistStagingAreaMap() {
         Utils.writeObject(Utils.join(GITLET_DIR, "STAGING"), stagingAreaMap);
+        Utils.writeObject(Utils.join(GITLET_DIR, "RM"), stagingRemovalMap);
     }
 
     public static void persistCommit(Commit commit, String branch) {

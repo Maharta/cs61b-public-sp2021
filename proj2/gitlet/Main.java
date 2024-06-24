@@ -30,6 +30,10 @@ public class Main {
                     validateGitletRepository();
                     Gitlet.handleCommit(args[1]);
                     break;
+                case "rm":
+                    validateGitletRepository();
+                    Gitlet.handleRm(args[1]);
+                    break;
                 default:
                     System.out.println("No command with that name exists.");
                     break;
