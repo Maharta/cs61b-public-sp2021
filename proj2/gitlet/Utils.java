@@ -247,9 +247,8 @@ class Utils {
         return Date.from(epoch);
     }
 
-    static DateTimeFormatter dateTimeFormatter() {
-        String pattern = "EEE MMM dd HH:mm:ss yyyy Z";
-        return DateTimeFormatter.ofPattern(pattern);
+    static String getDateFormatPattern() {
+        return "EEE MMM dd HH:mm:ss yyyy Z";
     }
 
     static String getLastSegment(String input) {

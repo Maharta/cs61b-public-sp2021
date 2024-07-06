@@ -24,7 +24,7 @@ public class Commit implements Serializable, Dumpable {
 
     public Date date;
     public String author;
-    public String parentCommit;
+    public Map<String, String> parentCommits;
 
     /**
      * contains mapping between fileName and sha1 string of the blob
@@ -32,18 +32,18 @@ public class Commit implements Serializable, Dumpable {
     public Map<String, String> fileBlobsha1Map;
     public String message;
 
-    public Commit(Date date, String author, String parentCommit, Map<String, String> fileBlobsha1Map, String message) {
+    public Commit(Date date, String author, Map<String, String> parentCommits, Map<String, String> fileBlobsha1Map, String message) {
         this.date = date;
         this.author = author;
-        this.parentCommit = parentCommit;
+        this.parentCommits = parentCommits;
         this.fileBlobsha1Map = fileBlobsha1Map;
         this.message = message;
     }
 
-    public Commit(Date date, Map<String, String> fileBlobsha1Map, String parentCommit, String message) {
+    public Commit(Date date, Map<String, String> fileBlobsha1Map, Map<String, String> parentCommits, String message) {
         this.date = date;
         this.fileBlobsha1Map = fileBlobsha1Map;
-        this.parentCommit = parentCommit;
+        this.parentCommits = parentCommits;
         this.message = message;
     }
 
@@ -52,7 +52,7 @@ public class Commit implements Serializable, Dumpable {
         StringBuilder sb = new StringBuilder();
         sb.append(date);
         sb.append(author);
-        sb.append(parentCommit);
+        sb.append(parentCommits);
         for (Map.Entry<String, String> stringStringEntry : fileBlobsha1Map.entrySet()) {
             sb.append(stringStringEntry.getKey()).append(stringStringEntry.getValue());
         }
@@ -63,7 +63,7 @@ public class Commit implements Serializable, Dumpable {
 
     @Override
     public void dump() {
-        System.out.println(parentCommit);
+        System.out.println(parentCommits);
         System.out.println(message);
         System.out.println(fileBlobsha1Map);
         System.out.println(date);

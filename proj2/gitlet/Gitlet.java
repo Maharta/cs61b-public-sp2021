@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
@@ -91,7 +93,6 @@ public class Gitlet {
         Repository.stagingAreaMap.clear();
         Repository.stagingRemovalMap.clear();
         Repository.persistStagingAreaMap();
-
     }
 
     private static Commit newCommit(Commit currentCommit, String message) {
@@ -100,7 +101,7 @@ public class Gitlet {
         Repository.stagingAreaMap.forEach((key, value) -> {
             // update commit fileBlobSha1Map with the staged files.
             currentCommit.fileBlobsha1Map.put(key, value);
-            // mpve the file from the staging-blob to blob
+            // move the file from the staging-blob to blob
             try {
                 Files.move(Paths.get(Repository.STAGING_BLOB_DIR.toString(), value),
                         Paths.get(Repository.BLOB_DIR.toString(), value),
@@ -116,7 +117,7 @@ public class Gitlet {
         });
 
         currentCommit.date = new Date();
-        currentCommit.parentCommit = parentSha1;
+        currentCommit.parentCommits = Map.of("first", parentSha1);
         currentCommit.message = message;
         return currentCommit;
     }
@@ -166,5 +167,42 @@ public class Gitlet {
         return Utils.getLastSegment(branchPath);
     }
 
+    /**
+     * Invariants: a merge commit has "second" key on its parentCommitsMap
+     */
+    public static void handleLog() {
+        Commit commit = getCurrentCommit();
+        StringBuilder sb = new StringBuilder();
+
+        String pattern = Utils.getDateFormatPattern();
+        DateFormat formatter = new SimpleDateFormat(pattern);
+        while (commit != null) {
+
+            sb.append("===").append("\n");
+            String sha1 = Utils.sha1(commit.toString());
+            sb.append("commit ").append(sha1).append("\n");
+
+            if (commit.parentCommits != null && commit.parentCommits.containsKey("second")) {
+                // case for merge commits
+                sb.append("Merge: ")
+                        .append(commit.parentCommits.get("first").substring(0, 4))
+                        .append(commit.parentCommits.get("second").substring(0, 4))
+                        .append("\n");
+            }
+
+            String date = formatter.format(commit.date);
+            sb.append("Date: ").append(date).append("\n");
+            sb.append(commit.message).append("\n\n");
+
+            if (commit.parentCommits == null) {
+                commit = null;
+            } else {
+                commit = Utils.readObject(Utils.join(Repository.COMMIT_DIR,
+                        commit.parentCommits.get("first")), Commit.class);
+            }
+        }
+
+        System.out.println(sb);
+    }
 
 }

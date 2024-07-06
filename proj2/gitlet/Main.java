@@ -34,6 +34,10 @@ public class Main {
                     validateGitletRepository();
                     Gitlet.handleRm(args[1]);
                     break;
+                case "log":
+                    validateGitletRepository();
+                    Gitlet.handleLog();
+                    break;
                 default:
                     System.out.println("No command with that name exists.");
                     break;
