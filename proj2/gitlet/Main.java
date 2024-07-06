@@ -38,6 +38,14 @@ public class Main {
                     validateGitletRepository();
                     Gitlet.handleLog();
                     break;
+                case "global-log":
+                    validateGitletRepository();
+                    Gitlet.handleGlobalLog();
+                    break;
+                case "find":
+                    validateGitletRepository();
+                    Gitlet.handleFind(args[1]);
+                    break;
                 default:
                     System.out.println("No command with that name exists.");
                     break;
@@ -63,14 +71,11 @@ public class Main {
         }
         switch (args[0]) {
             case "add":
-                if (args.length != 2) {
-                    throw Utils.error("Incorrect operands.");
-                }
-                break;
             case "commit":
             case "rm":
+            case "find":
                 if (args.length != 2 || args[1].isBlank()) {
-                    throw Utils.error("Please enter a commit message.");
+                    throw Utils.error("Incorrect operands.");
                 }
         }
     }

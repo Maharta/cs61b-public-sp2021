@@ -8,6 +8,7 @@ import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -172,28 +173,8 @@ public class Gitlet {
      */
     public static void handleLog() {
         Commit commit = getCurrentCommit();
-        StringBuilder sb = new StringBuilder();
-
-        String pattern = Utils.getDateFormatPattern();
-        DateFormat formatter = new SimpleDateFormat(pattern);
         while (commit != null) {
-
-            sb.append("===").append("\n");
-            String sha1 = Utils.sha1(commit.toString());
-            sb.append("commit ").append(sha1).append("\n");
-
-            if (commit.parentCommits != null && commit.parentCommits.containsKey("second")) {
-                // case for merge commits
-                sb.append("Merge: ")
-                        .append(commit.parentCommits.get("first").substring(0, 4))
-                        .append(commit.parentCommits.get("second").substring(0, 4))
-                        .append("\n");
-            }
-
-            String date = formatter.format(commit.date);
-            sb.append("Date: ").append(date).append("\n");
-            sb.append(commit.message).append("\n\n");
-
+            printLogFromCommit(commit);
             if (commit.parentCommits == null) {
                 commit = null;
             } else {
@@ -202,7 +183,51 @@ public class Gitlet {
             }
         }
 
-        System.out.println(sb);
     }
+
+    public static void handleGlobalLog() {
+        List<String> commitFileNames = Utils.plainFilenamesIn(Repository.COMMIT_DIR);
+        for (String s : commitFileNames) {
+            Commit commit = Utils.readObject(Utils.join(Repository.COMMIT_DIR, s), Commit.class);
+            printLogFromCommit(commit);
+        }
+    }
+
+    public static void handleFind(String commitMessage) {
+        List<String> commitFileNames = Utils.plainFilenamesIn(Repository.COMMIT_DIR);
+        for (String s : commitFileNames) {
+            Commit commit = Utils.readObject(Utils.join(Repository.COMMIT_DIR, s), Commit.class);
+            if (Objects.equals(commit.message, commitMessage)) {
+                System.out.println(s);
+            }
+        }
+    }
+
+
+    private static void printLogFromCommit(Commit commit) {
+        StringBuilder sb = new StringBuilder();
+
+        String pattern = Utils.getDateFormatPattern();
+        DateFormat formatter = new SimpleDateFormat(pattern);
+
+        sb.append("===").append("\n");
+        String sha1 = Utils.sha1(commit.toString());
+        sb.append("commit ").append(sha1).append("\n");
+
+        if (commit.parentCommits != null && commit.parentCommits.containsKey("second")) {
+            // case for merge commits
+            sb.append("Merge: ")
+                    .append(commit.parentCommits.get("first").substring(0, 4))
+                    .append(commit.parentCommits.get("second").substring(0, 4))
+                    .append("\n");
+        }
+
+        String date = formatter.format(commit.date);
+        sb.append("Date: ").append(date).append("\n");
+        sb.append(commit.message).append("\n\n");
+
+        System.out.print(sb);
+    }
+
 
 }
