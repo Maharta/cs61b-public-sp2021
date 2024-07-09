@@ -7,10 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 
 public class Gitlet {
@@ -230,4 +227,33 @@ public class Gitlet {
     }
 
 
+    public static void handleStatus() {
+        // branches part
+        System.out.println("=== Branches ===");
+        List<String> branches = Utils.plainFilenamesIn(Repository.BRANCH_DIR);
+        String currentBranch = getCurrentBranch();
+        for (String branch : branches) {
+            if (Objects.equals(branch, currentBranch)) {
+                System.out.println("*" + branch);
+            } else {
+                System.out.println(branch);
+            }
+        }
+        System.out.println();
+        // Staged files
+        System.out.println("=== Staged Files ===");
+        TreeMap<String, String> sortedStagedAreaMap = new TreeMap<>(Repository.stagingAreaMap);
+        for (String s : sortedStagedAreaMap.keySet()) {
+            System.out.println(s);
+        }
+        System.out.println();
+        // Removed files
+        System.out.println("=== Removed Files ===");
+        TreeMap<String, String> sortedStagedRemovalMap = new TreeMap<>(Repository.stagingRemovalMap);
+        for (String s : sortedStagedRemovalMap.keySet()) {
+            System.out.println(s);
+        }
+        System.out.println();
+
+    }
 }
