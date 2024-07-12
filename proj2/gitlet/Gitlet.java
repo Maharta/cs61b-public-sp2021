@@ -40,7 +40,11 @@ public class Gitlet {
         String fileContent = Utils.readContentsAsString(file);
         String sha1 = Utils.sha1(fileContent);
 
-        if (Repository.stagingAreaMap.get(fileName) == null) {
+        if (Repository.stagingRemovalMap.containsKey(fileName)) {
+            // file on removal
+            Repository.stagingRemovalMap.remove(fileName);
+            Repository.persistStagingAreaMap();
+        } else if (Repository.stagingAreaMap.get(fileName) == null) {
             // file not staged yet
             if (Objects.equals(commitFileSha1Map.get(fileName), sha1)) {
                 // working directory identical to current commit
@@ -133,7 +137,7 @@ public class Gitlet {
         }
 
         if (commit.fileBlobsha1Map.get(fileName) != null) {
-            Repository.stagingRemovalMap.put(fileName, null);
+            Repository.stagingRemovalMap.put(fileName, "");
             Repository.persistStagingAreaMap();
             if (Utils.join(Repository.CWD, fileName).exists()) {
                 File file = new File(fileName);
@@ -184,6 +188,7 @@ public class Gitlet {
 
     public static void handleGlobalLog() {
         List<String> commitFileNames = Utils.plainFilenamesIn(Repository.COMMIT_DIR);
+        assert commitFileNames != null;
         for (String s : commitFileNames) {
             Commit commit = Utils.readObject(Utils.join(Repository.COMMIT_DIR, s), Commit.class);
             printLogFromCommit(commit);
@@ -255,13 +260,23 @@ public class Gitlet {
             System.out.println(s);
         }
         System.out.println();
+
+        List<String> fileNamesInDir = Utils.plainFilenamesIn(Repository.GITLET_DIR.getParentFile());
+
         // Modifications not staged for commit (hard one)
         System.out.println("=== Modifications Not Staged For Commit ===");
-        TreeMap<String, String> modifiedButNotStagedMap = generateModifiedButNotStagedMap();
+        TreeMap<String, String> modifiedButNotStagedMap = generateModifiedButNotStagedMap(fileNamesInDir);
         for (Map.Entry<String, String> modifiedEntry : modifiedButNotStagedMap.entrySet()) {
             System.out.println(modifiedEntry.getKey() + " " + modifiedEntry.getValue());
         }
-
+        System.out.println();
+        // Untracked files
+        System.out.println("=== Untracked Files ===");
+        TreeSet<String> untrackedFilesSet = generateUntrackedFilesMap(fileNamesInDir);
+        for (String s : untrackedFilesSet) {
+            System.out.println(s);
+        }
+        System.out.println();
     }
 
     /**
@@ -273,29 +288,64 @@ public class Gitlet {
      *  <li>Not staged for removal, but tracked in the current commit and deleted from the working directory.</li>
      * </ul>
      */
-    private static TreeMap<String, String> generateModifiedButNotStagedMap() {
+    private static TreeMap<String, String> generateModifiedButNotStagedMap(List<String> fileNamesInDir) {
         TreeMap<String, String> modifiedMap = new TreeMap<>();
-        List<String> fileNamesInDir = Utils.plainFilenamesIn(Repository.GITLET_DIR.getParentFile());
 
         assert fileNamesInDir != null;
         Set<String> fileNamesSet = new HashSet<>(fileNamesInDir);
 
         Commit currentCommit = getCurrentCommit();
-        Map<String, String> currentCommitFilesMap = currentCommit.fileBlobsha1Map;
 
-        for (String file : fileNamesInDir) {
-            String workingFileContents = Utils.readContentsAsString(new File(file));
-            String sha1Hash = Utils.sha1(workingFileContents);
+        // files tracked in current commit
+        currentCommit.fileBlobsha1Map.forEach(
+                (key, value) -> {
+                    // deleted from working directory
+                    if (!fileNamesSet.contains(key)) {
+                        // but not staged from removal
+                        if (!Repository.stagingRemovalMap.containsKey(key)) {
+                            modifiedMap.put(key, "(deleted1)");
+                        }
+                    } else if (!Repository.stagingAreaMap.containsKey(key)
+                            && !Repository.stagingRemovalMap.containsKey(key)) {
+                        String currentFileContents = Utils.readContentsAsString(new File(key));
+                        String sha1 = Utils.sha1(currentFileContents);
+                        // in working directory, tracked in commit but changed and not staged
+                        if (!Objects.equals(value, sha1)) {
+                            modifiedMap.put(key, "(modified1)");
+                        }
+                    }
+                }
+        );
 
-            // tracked in the current commit, changed in the working dir, but not staged
-            if (currentCommitFilesMap.get(file) != null) {
-                // contents in working directory is different than in commit map
-                if (!Objects.equals(sha1Hash, currentCommitFilesMap.get(file))) {
-                    modifiedMap.put(file, "(modified)");
+
+        Repository.stagingAreaMap.forEach((key, value) -> {
+            if (!fileNamesSet.contains(key)) {
+                modifiedMap.put(key, "(deleted2)");
+            } else {
+                String currentFileContents = Utils.readContentsAsString(new File(key));
+                String sha1 = Utils.sha1(currentFileContents);
+
+                if (!Objects.equals(sha1, value)) {
+                    modifiedMap.put(key, "(modified2)");
                 }
             }
-        }
-
+        });
         return modifiedMap;
+    }
+
+    private static TreeSet<String> generateUntrackedFilesMap(List<String> fileNamesInDir) {
+        TreeSet<String> untrackedFilesSet = new TreeSet<>();
+        Commit currCommit = getCurrentCommit();
+        Map<String, String> fileTrackedMap = currCommit.fileBlobsha1Map;
+        fileNamesInDir.forEach(fileName -> {
+            if (fileTrackedMap.get(fileName) == null && Repository.stagingAreaMap.get(fileName) == null) {
+                untrackedFilesSet.add(fileName);
+            }
+            if (Repository.stagingRemovalMap.containsKey(fileName)) {
+                untrackedFilesSet.add(fileName);
+            }
+        });
+
+        return untrackedFilesSet;
     }
 }
