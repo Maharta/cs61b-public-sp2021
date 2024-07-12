@@ -232,6 +232,7 @@ public class Gitlet {
         System.out.println("=== Branches ===");
         List<String> branches = Utils.plainFilenamesIn(Repository.BRANCH_DIR);
         String currentBranch = getCurrentBranch();
+        assert branches != null;
         for (String branch : branches) {
             if (Objects.equals(branch, currentBranch)) {
                 System.out.println("*" + branch);
@@ -254,6 +255,47 @@ public class Gitlet {
             System.out.println(s);
         }
         System.out.println();
+        // Modifications not staged for commit (hard one)
+        System.out.println("=== Modifications Not Staged For Commit ===");
+        TreeMap<String, String> modifiedButNotStagedMap = generateModifiedButNotStagedMap();
+        for (Map.Entry<String, String> modifiedEntry : modifiedButNotStagedMap.entrySet()) {
+            System.out.println(modifiedEntry.getKey() + " " + modifiedEntry.getValue());
+        }
 
+    }
+
+    /**
+     * A file in the working directory is “modified but not staged” if it is
+     * <ul>
+     *  <li>Tracked in the current commit, changed in the working directory, but not staged; or
+     *  <li>Staged for addition, but with different contents than in the working directory; or</li>
+     *  <li>Staged for addition, but deleted in the working directory; or</li>
+     *  <li>Not staged for removal, but tracked in the current commit and deleted from the working directory.</li>
+     * </ul>
+     */
+    private static TreeMap<String, String> generateModifiedButNotStagedMap() {
+        TreeMap<String, String> modifiedMap = new TreeMap<>();
+        List<String> fileNamesInDir = Utils.plainFilenamesIn(Repository.GITLET_DIR.getParentFile());
+
+        assert fileNamesInDir != null;
+        Set<String> fileNamesSet = new HashSet<>(fileNamesInDir);
+
+        Commit currentCommit = getCurrentCommit();
+        Map<String, String> currentCommitFilesMap = currentCommit.fileBlobsha1Map;
+
+        for (String file : fileNamesInDir) {
+            String workingFileContents = Utils.readContentsAsString(new File(file));
+            String sha1Hash = Utils.sha1(workingFileContents);
+
+            // tracked in the current commit, changed in the working dir, but not staged
+            if (currentCommitFilesMap.get(file) != null) {
+                // contents in working directory is different than in commit map
+                if (!Objects.equals(sha1Hash, currentCommitFilesMap.get(file))) {
+                    modifiedMap.put(file, "(modified)");
+                }
+            }
+        }
+
+        return modifiedMap;
     }
 }
