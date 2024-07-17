@@ -83,7 +83,7 @@ public class Gitlet {
         }
         // get current commit from the branch
         Commit current = getCurrentCommit();
-        //modify currentCommit to newCommit, link newCommit parent to current
+        //modify currentCommit to newCommit, link newCommit parent to current sha1 hash
         Commit newCommit = newCommit(current, commitMessage);
         // persist new Commit
         Repository.persistCommit(newCommit, getCurrentBranch());
@@ -152,7 +152,7 @@ public class Gitlet {
 
     private static String getCurrentCommitHash() {
         String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
-        String commitHash = "";
+        String commitHash;
         if (HEAD.startsWith("ref:")) {
             String branchPath = HEAD.split(":")[1];
             commitHash = Utils.readContentsAsString(Utils.join(Repository.GITLET_DIR, branchPath));
@@ -197,6 +197,7 @@ public class Gitlet {
 
     public static void handleFind(String commitMessage) {
         List<String> commitFileNames = Utils.plainFilenamesIn(Repository.COMMIT_DIR);
+        assert commitFileNames != null;
         for (String s : commitFileNames) {
             Commit commit = Utils.readObject(Utils.join(Repository.COMMIT_DIR, s), Commit.class);
             if (Objects.equals(commit.message, commitMessage)) {
@@ -219,8 +220,8 @@ public class Gitlet {
         if (commit.parentCommits != null && commit.parentCommits.containsKey("second")) {
             // case for merge commits
             sb.append("Merge: ")
-                    .append(commit.parentCommits.get("first").substring(0, 4))
-                    .append(commit.parentCommits.get("second").substring(0, 4))
+                    .append(commit.parentCommits.get("first"), 0, 4)
+                    .append(commit.parentCommits.get("second"), 0, 4)
                     .append("\n");
         }
 
@@ -348,8 +349,8 @@ public class Gitlet {
 
         return untrackedFilesSet;
     }
-
-    public static void handleCheckout(String[] args) {
+  
+      public static void handleCheckout(String[] args) {
         if (args.length == 2) {
             // TODO: checkout branch
         } else if (args[1].equals("--")) {
@@ -368,5 +369,43 @@ public class Gitlet {
             String checkedFileContents = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, commitFileMap.get(fileName)));
             Utils.writeContents(Utils.join(Repository.CWD, fileName), checkedFileContents);
         }
+    }
+  
+    public static void handleBranch(String branchName) {
+        boolean branchExist = isBranchExist(branchName);
+        if (branchExist) {
+            throw Utils.error("A branch with that name already exists.");
+        }
+
+        Commit headCommit = getCurrentCommit();
+        String sha1 = Utils.sha1(headCommit.toString());
+
+        // create new branch on file system
+        Utils.writeContents(Utils.join(Repository.BRANCH_DIR, branchName), sha1);
+    }
+
+    public static void handleRmBranch(String branchName) {
+        boolean branchExist = isBranchExist(branchName);
+        if (!branchExist) {
+            throw Utils.error("A branch with that name does not exist.");
+        }
+        String currentBranch = getCurrentBranch();
+        if (Objects.equals(currentBranch, branchName)) {
+            throw Utils.error("Cannot remove the current branch.");
+        }
+
+        File branchPtrFile = Utils.join(Repository.BRANCH_DIR, branchName);
+        branchPtrFile.delete();
+    }
+
+    private static boolean isBranchExist(String branchName) {
+        List<String> branchesFile = Utils.plainFilenamesIn(Repository.BRANCH_DIR);
+        assert branchesFile != null;
+        for (String branch : branchesFile) {
+            if (Objects.equals(branch, branchName)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
