@@ -281,7 +281,7 @@ public class Gitlet {
     }
 
     /**
-     * A file in the working directory is “modified but not staged” if it is
+     * A file in the working directory is "modified but not staged" if it is
      * <ul>
      *  <li>Tracked in the current commit, changed in the working directory, but not staged; or
      *  <li>Staged for addition, but with different contents than in the working directory; or</li>
@@ -373,7 +373,8 @@ public class Gitlet {
             }
 
             // all validations done
-            Commit branchHead = Utils.readObject(Utils.join(Repository.BRANCH_DIR, branchName), Commit.class);
+            String branchHeadSha1 = Utils.readContentsAsString(Utils.join(Repository.BRANCH_DIR, branchName));
+            Commit branchHead = Utils.readObject(Utils.join(Repository.COMMIT_DIR, branchHeadSha1), Commit.class);
 
             branchHead.fileBlobsha1Map.forEach(
                     (fileName, blob) -> {
