@@ -349,7 +349,28 @@ public class Gitlet {
 
         return untrackedFilesSet;
     }
+  
+      public static void handleCheckout(String[] args) {
+        if (args.length == 2) {
+            // TODO: checkout branch
+        } else if (args[1].equals("--")) {
+            if (args.length != 3) {
+                throw Utils.error("File name not specified.");
+            }
+            String fileName = args[2];
+            Commit curr = getCurrentCommit();
 
+            Map<String, String> commitFileMap = curr.fileBlobsha1Map;
+
+            if (!commitFileMap.containsKey(fileName)) {
+                throw Utils.error("File does not exist in that commit.");
+            }
+
+            String checkedFileContents = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, commitFileMap.get(fileName)));
+            Utils.writeContents(Utils.join(Repository.CWD, fileName), checkedFileContents);
+        }
+    }
+  
     public static void handleBranch(String branchName) {
         boolean branchExist = isBranchExist(branchName);
         if (branchExist) {
@@ -387,6 +408,4 @@ public class Gitlet {
         }
         return false;
     }
-
-
 }

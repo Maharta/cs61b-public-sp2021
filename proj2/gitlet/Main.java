@@ -50,6 +50,10 @@ public class Main {
                     validateGitletRepository();
                     Gitlet.handleStatus();
                     break;
+                case "checkout":
+                    validateGitletRepository();
+                    Gitlet.handleCheckout(args);
+                    break;
                 case "branch":
                     validateGitletRepository();
                     Gitlet.handleBranch(args[1]);
@@ -57,7 +61,6 @@ public class Main {
                 case "rm-branch":
                     validateGitletRepository();
                     Gitlet.handleRmBranch(args[1]);
-                    break;
                 default:
                     System.out.println("No command with that name exists.");
                     break;
@@ -92,6 +95,11 @@ public class Main {
                     throw Utils.error("Incorrect operands.");
                 }
                 break;
+            case "checkout":
+                if (args.length < 2 || args[1].isBlank()) {
+                    throw Utils.error("Incorrect operands.");
+                }
+
         }
     }
 }
