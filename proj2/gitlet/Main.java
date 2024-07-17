@@ -96,7 +96,7 @@ public class Main {
                 }
                 break;
             case "checkout":
-                if (args.length < 2 || args[1].isBlank()) {
+                if (args.length < 2) {
                     throw Utils.error("Incorrect operands.");
                 }
 

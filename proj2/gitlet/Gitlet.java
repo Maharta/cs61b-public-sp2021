@@ -349,11 +349,41 @@ public class Gitlet {
 
         return untrackedFilesSet;
     }
-  
-      public static void handleCheckout(String[] args) {
+
+    public static void handleCheckout(String[] args) {
         if (args.length == 2) {
-            // TODO: checkout branch
-        } else if (args[1].equals("--")) {
+            String branchName = args[1];
+            String currentBranch = getCurrentBranch();
+
+            if (Objects.equals(branchName, currentBranch)) {
+                throw Utils.error("No need to checkout the current branch.");
+            }
+
+            Set<String> existingBranch = new HashSet<>(Objects.requireNonNull(Utils.plainFilenamesIn(Repository.BRANCH_DIR)));
+            if (!existingBranch.contains(branchName)) {
+                throw Utils.error("No such branch exists.");
+            }
+
+            List<String> files = Utils.plainFilenamesIn(Repository.GITLET_DIR.getParentFile());
+            assert files != null;
+            TreeSet<String> untrackedFiles = generateUntrackedFilesMap(files);
+
+            if (!untrackedFiles.isEmpty()) {
+                throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
+            }
+
+            // all validations done
+            Commit branchHead = Utils.readObject(Utils.join(Repository.BRANCH_DIR, branchName), Commit.class);
+
+            branchHead.fileBlobsha1Map.forEach(
+                    (fileName, blob) -> {
+                        String blobContents = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, blob));
+                        Utils.writeContents(Utils.join(Repository.CWD), fileName, blobContents);
+                    }
+            );
+        }
+        // checkout by filename only
+        else if (args[1].equals("--")) {
             if (args.length != 3) {
                 throw Utils.error("File name not specified.");
             }
@@ -369,8 +399,45 @@ public class Gitlet {
             String checkedFileContents = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, commitFileMap.get(fileName)));
             Utils.writeContents(Utils.join(Repository.CWD, fileName), checkedFileContents);
         }
+        // checkout by filename and commit id
+        else {
+            String thirdArg = args[2];
+            if (!Objects.equals(thirdArg, "--")) {
+                throw Utils.error("Invalid operands.");
+            }
+            String commitId = args[1];
+            String fileName = args[3];
+
+            List<String> commitFiles = Utils.plainFilenamesIn(Repository.COMMIT_DIR);
+            assert commitFiles != null;
+            Set<String> commitFilesSet = new HashSet<>(commitFiles);
+
+            // case if user inputted less than 40 sha 1 hash
+            if (commitId.length() != 40) {
+                for (String commitFile : commitFiles) {
+                    if (Objects.equals(commitFile.substring(0, commitId.length()), commitId)) {
+                        commitId = commitFile;
+                        break;
+                    }
+                }
+            }
+
+            if (!commitFilesSet.contains(commitId)) {
+                throw Utils.error("No commit with that id exists.");
+            }
+
+            Commit commit = Utils.readObject(Utils.join(Repository.COMMIT_DIR, commitId), Commit.class);
+            Map<String, String> commitFileMap = commit.fileBlobsha1Map;
+
+            if (!commitFileMap.containsKey(fileName)) {
+                throw Utils.error("File does not exist in that commit.");
+            }
+
+            String checkedFileContents = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, commitFileMap.get(fileName)));
+            Utils.writeContents(Utils.join(Repository.CWD, fileName), checkedFileContents);
+        }
     }
-  
+
     public static void handleBranch(String branchName) {
         boolean branchExist = isBranchExist(branchName);
         if (branchExist) {
