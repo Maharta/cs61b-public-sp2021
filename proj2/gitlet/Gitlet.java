@@ -364,24 +364,38 @@ public class Gitlet {
                 throw Utils.error("No such branch exists.");
             }
 
-            List<String> files = Utils.plainFilenamesIn(Repository.GITLET_DIR.getParentFile());
+            List<String> files = Utils.plainFilenamesIn(Repository.CWD);
             assert files != null;
             TreeSet<String> untrackedFiles = generateUntrackedFilesMap(files);
 
             if (!untrackedFiles.isEmpty()) {
                 throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
             }
-
             // all validations done
+
+            // delete all files in the current branch
+            for (String file : files) {
+                new File(file).delete();
+            }
+
+            // remove all from stagingArea;
+            Repository.stagingAreaMap.clear();
+            Repository.stagingRemovalMap.clear();
+            Repository.persistStagingAreaMap();
+
+            // write all files from the checked out branch
             String branchHeadSha1 = Utils.readContentsAsString(Utils.join(Repository.BRANCH_DIR, branchName));
             Commit branchHead = Utils.readObject(Utils.join(Repository.COMMIT_DIR, branchHeadSha1), Commit.class);
 
             branchHead.fileBlobsha1Map.forEach(
                     (fileName, blob) -> {
                         String blobContents = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, blob));
-                        Utils.writeContents(Utils.join(Repository.CWD), fileName, blobContents);
+                        Utils.writeContents(Utils.join(Repository.CWD, fileName), blobContents);
                     }
             );
+
+            // update HEAD pointer.
+            Utils.writeContents(Utils.join(Repository.GITLET_DIR, "HEAD"), "ref:refs/branches/" + branchName);
         }
         // checkout by filename only
         else if (args[1].equals("--")) {
