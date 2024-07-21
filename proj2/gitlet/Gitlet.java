@@ -163,6 +163,9 @@ public class Gitlet {
         return commitHash;
     }
 
+    /**
+     * Get the name of the current branch you are currently in
+     */
     private static String getCurrentBranch() {
         String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
         String branchPath = HEAD.split(":")[1];
@@ -273,7 +276,7 @@ public class Gitlet {
         System.out.println();
         // Untracked files
         System.out.println("=== Untracked Files ===");
-        TreeSet<String> untrackedFilesSet = generateUntrackedFilesMap(fileNamesInDir);
+        TreeSet<String> untrackedFilesSet = generateUntrackedFilesSet(fileNamesInDir);
         for (String s : untrackedFilesSet) {
             System.out.println(s);
         }
@@ -334,7 +337,7 @@ public class Gitlet {
         return modifiedMap;
     }
 
-    private static TreeSet<String> generateUntrackedFilesMap(List<String> fileNamesInDir) {
+    private static TreeSet<String> generateUntrackedFilesSet(List<String> fileNamesInDir) {
         TreeSet<String> untrackedFilesSet = new TreeSet<>();
         Commit currCommit = getCurrentCommit();
         Map<String, String> fileTrackedMap = currCommit.fileBlobsha1Map;
@@ -366,7 +369,7 @@ public class Gitlet {
 
             List<String> files = Utils.plainFilenamesIn(Repository.CWD);
             assert files != null;
-            TreeSet<String> untrackedFiles = generateUntrackedFilesMap(files);
+            TreeSet<String> untrackedFiles = generateUntrackedFilesSet(files);
 
             if (!untrackedFiles.isEmpty()) {
                 throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
@@ -480,6 +483,61 @@ public class Gitlet {
         branchPtrFile.delete();
     }
 
+    /**
+     * Checks out all the files tracked by the given commit.
+     * Removes tracked files that are not present in that commit.
+     * Also moves the current branch’s head to that commit node.
+     * The [commit id] may be abbreviated as for checkout.
+     * The staging area is cleared.
+     * The command is essentially checkout of an arbitrary commit that also changes the current branch head.
+     */
+    public static void handleReset(String commitId) {
+        List<String> fileNames = Utils.plainFilenamesIn(Repository.CWD);
+        assert fileNames != null;
+        Set<String> untrackedFiles = generateUntrackedFilesSet(fileNames);
+
+        if (!untrackedFiles.isEmpty()) {
+            throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
+        }
+
+        List<String> commitIds = Utils.plainFilenamesIn(Repository.COMMIT_DIR);
+        assert commitIds != null;
+        Set<String> commitIdSet = new HashSet<>(commitIds);
+
+        if (commitId.length() != 40) {
+            for (String id : commitIds) {
+                if (id.startsWith(commitId)) {
+                    commitId = id;
+                    break;
+                }
+            }
+        }
+
+        if (!commitIdSet.contains(commitId)) {
+            throw Utils.error("No commit with that id exists.");
+        }
+
+        String currentBranch = getCurrentBranch();
+        Utils.writeContents(Utils.join(Repository.BRANCH_DIR, currentBranch), commitId);
+
+        Commit commitToReset = Utils.readObject(Utils.join(Repository.COMMIT_DIR, commitId), Commit.class);
+        Map<String, String> commitFilesMap = commitToReset.fileBlobsha1Map;
+
+        List<String> files = Utils.plainFilenamesIn(Repository.CWD);
+
+        for (String file : files) {
+            if (commitFilesMap.containsKey(file)) {
+                String blobSha1 = commitFilesMap.get(file);
+                String blobContent = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, blobSha1));
+                Utils.writeContents(Utils.join(Repository.CWD, file), blobContent);
+            } else {
+                File fileToDelete = Utils.join(Repository.CWD, file);
+                fileToDelete.delete();
+            }
+        }
+    }
+
+
     private static boolean isBranchExist(String branchName) {
         List<String> branchesFile = Utils.plainFilenamesIn(Repository.BRANCH_DIR);
         assert branchesFile != null;
@@ -490,4 +548,5 @@ public class Gitlet {
         }
         return false;
     }
+
 }

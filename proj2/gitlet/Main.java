@@ -61,6 +61,9 @@ public class Main {
                 case "rm-branch":
                     validateGitletRepository();
                     Gitlet.handleRmBranch(args[1]);
+                case "reset":
+                    validateGitletRepository();
+                    Gitlet.handleReset(args[1]);
                 default:
                     System.out.println("No command with that name exists.");
                     break;
@@ -91,6 +94,7 @@ public class Main {
             case "find":
             case "branch":
             case "rm-branch":
+            case "reset":
                 if (args.length != 2 || args[1].isBlank()) {
                     throw Utils.error("Incorrect operands.");
                 }
