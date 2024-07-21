@@ -61,9 +61,11 @@ public class Main {
                 case "rm-branch":
                     validateGitletRepository();
                     Gitlet.handleRmBranch(args[1]);
+                    break;
                 case "reset":
                     validateGitletRepository();
                     Gitlet.handleReset(args[1]);
+                    break;
                 default:
                     System.out.println("No command with that name exists.");
                     break;
@@ -88,8 +90,12 @@ public class Main {
             throw Utils.error("Please enter a command.");
         }
         switch (args[0]) {
-            case "add":
             case "commit":
+                if (args.length != 2 || args[1].isBlank()) {
+                    throw Utils.error("Please enter a commit message.");
+                }
+                break;
+            case "add":
             case "rm":
             case "find":
             case "branch":

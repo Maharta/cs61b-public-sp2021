@@ -201,11 +201,17 @@ public class Gitlet {
     public static void handleFind(String commitMessage) {
         List<String> commitFileNames = Utils.plainFilenamesIn(Repository.COMMIT_DIR);
         assert commitFileNames != null;
+
+        boolean successfulFind = false;
         for (String s : commitFileNames) {
             Commit commit = Utils.readObject(Utils.join(Repository.COMMIT_DIR, s), Commit.class);
             if (Objects.equals(commit.message, commitMessage)) {
                 System.out.println(s);
+                successfulFind = true;
             }
+        }
+        if (!successfulFind) {
+            throw Utils.error("Found no commit with that message.");
         }
     }
 
@@ -381,10 +387,11 @@ public class Gitlet {
                 new File(file).delete();
             }
 
-            // remove all from stagingArea;
+            // clear stagingArea;
             Repository.stagingAreaMap.clear();
             Repository.stagingRemovalMap.clear();
             Repository.persistStagingAreaMap();
+            Repository.removeFilesFromStagingArea();
 
             // write all files from the checked out branch
             String branchHeadSha1 = Utils.readContentsAsString(Utils.join(Repository.BRANCH_DIR, branchName));
@@ -421,7 +428,7 @@ public class Gitlet {
         else {
             String thirdArg = args[2];
             if (!Objects.equals(thirdArg, "--")) {
-                throw Utils.error("Invalid operands.");
+                throw Utils.error("Incorrect operands.");
             }
             String commitId = args[1];
             String fileName = args[3];
@@ -535,6 +542,12 @@ public class Gitlet {
                 fileToDelete.delete();
             }
         }
+
+        // clear staging area
+        Repository.stagingAreaMap.clear();
+        Repository.stagingRemovalMap.clear();
+        Repository.persistStagingAreaMap();
+        Repository.removeFilesFromStagingArea();
     }
 
 

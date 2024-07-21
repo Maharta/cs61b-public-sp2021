@@ -16,17 +16,6 @@ import java.util.Objects;
  */
 public class Repository {
     /**
-     * TODO: add instance variables here.
-     * <p>
-     * <p>
-     * List all instance variables of the Repository class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided two examples for you.
-     */
-
-    static HashMap<String, String> stagingAreaMap;
-    static HashMap<String, String> stagingRemovalMap;
-    /**
      * The current working directory.
      */
     public static final File CWD = new File(System.getProperty("user.dir"));
@@ -35,12 +24,14 @@ public class Repository {
      */
     public static final File GITLET_DIR = Utils.join(CWD, ".gitlet");
     public static final File BRANCH_DIR = Utils.join(GITLET_DIR, "refs", "branches");
-
     public static final File COMMIT_DIR = Utils.join(GITLET_DIR, "commits");
     public static final File BLOB_DIR = Utils.join(GITLET_DIR, "blobs");
     public static final File STAGING_BLOB_DIR = Utils.join(BLOB_DIR, "staging");
+    public static final String MASTER_BRANCH = "master";
 
-    public static String MASTER_BRANCH = "master";
+
+    static HashMap<String, String> stagingAreaMap;
+    static HashMap<String, String> stagingRemovalMap;
 
     /* TODO: fill in the rest of this class. */
     public static void setupPersistence() {
