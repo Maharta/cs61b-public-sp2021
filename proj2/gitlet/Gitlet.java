@@ -533,15 +533,14 @@ public class Gitlet {
         List<String> files = Utils.plainFilenamesIn(Repository.CWD);
 
         for (String file : files) {
-            if (commitFilesMap.containsKey(file)) {
-                String blobSha1 = commitFilesMap.get(file);
-                String blobContent = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, blobSha1));
-                Utils.writeContents(Utils.join(Repository.CWD, file), blobContent);
-            } else {
-                File fileToDelete = Utils.join(Repository.CWD, file);
-                fileToDelete.delete();
-            }
+            File fileToDelete = Utils.join(Repository.CWD, file);
+            fileToDelete.delete();
         }
+
+        commitFilesMap.forEach((key, value) -> {
+            String contents = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, value));
+            Utils.writeContents(Utils.join(Repository.CWD, key), contents);
+        });
 
         // clear staging area
         Repository.stagingAreaMap.clear();
