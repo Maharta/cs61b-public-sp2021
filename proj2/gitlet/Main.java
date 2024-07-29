@@ -66,23 +66,19 @@ public class Main {
                     validateGitletRepository();
                     Gitlet.handleReset(args[1]);
                     break;
+                case "merge":
+                    validateGitletRepository();
+                    Gitlet.handleMerge(args[1]);
+                    break;
                 default:
                     System.out.println("No command with that name exists.");
                     break;
-                // TODO: FILL THE REST IN
             }
         } catch (GitletException e) {
             System.out.println(e.getMessage());
             System.exit(0);
         }
 
-    }
-
-    private static void validateGitletRepository() {
-        if (!Repository.GITLET_DIR.exists()) {
-            System.out.println("Not in an initialized Gitlet directory.");
-            System.exit(0);
-        }
     }
 
     private static void validateOperands(String[] args) {
@@ -101,6 +97,7 @@ public class Main {
             case "branch":
             case "rm-branch":
             case "reset":
+            case "merge":
                 if (args.length != 2 || args[1].isBlank()) {
                     throw Utils.error("Incorrect operands.");
                 }
@@ -110,6 +107,13 @@ public class Main {
                     throw Utils.error("Incorrect operands.");
                 }
 
+        }
+    }
+
+    private static void validateGitletRepository() {
+        if (!Repository.GITLET_DIR.exists()) {
+            System.out.println("Not in an initialized Gitlet directory.");
+            System.exit(0);
         }
     }
 }

@@ -71,6 +71,23 @@ public class Gitlet {
         }
     }
 
+    private static Commit getCurrentCommit() {
+        return Utils.readObject(Utils.join(Repository.COMMIT_DIR, getCurrentCommitHash()), Commit.class);
+    }
+
+    private static String getCurrentCommitHash() {
+        String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
+        String commitHash;
+        if (HEAD.startsWith("ref:")) {
+            String branchPath = HEAD.split(":")[1];
+            commitHash = Utils.readContentsAsString(Utils.join(Repository.GITLET_DIR, branchPath));
+        } else {
+            commitHash = HEAD;
+        }
+
+        return commitHash;
+    }
+
     /**
      * Handles commit given by user.
      * Invariants:
@@ -124,6 +141,15 @@ public class Gitlet {
         return currentCommit;
     }
 
+    /**
+     * Get the name of the current branch you are currently in
+     */
+    private static String getCurrentBranch() {
+        String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
+        String branchPath = HEAD.split(":")[1];
+        return Utils.getLastSegment(branchPath);
+    }
+
     public static void handleRm(String fileName) {
         Commit commit = getCurrentCommit();
         if (Repository.stagingAreaMap.get(fileName) == null && commit.fileBlobsha1Map.get(fileName) == null) {
@@ -146,32 +172,6 @@ public class Gitlet {
         }
     }
 
-    private static Commit getCurrentCommit() {
-        return Utils.readObject(Utils.join(Repository.COMMIT_DIR, getCurrentCommitHash()), Commit.class);
-    }
-
-    private static String getCurrentCommitHash() {
-        String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
-        String commitHash;
-        if (HEAD.startsWith("ref:")) {
-            String branchPath = HEAD.split(":")[1];
-            commitHash = Utils.readContentsAsString(Utils.join(Repository.GITLET_DIR, branchPath));
-        } else {
-            commitHash = HEAD;
-        }
-
-        return commitHash;
-    }
-
-    /**
-     * Get the name of the current branch you are currently in
-     */
-    private static String getCurrentBranch() {
-        String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
-        String branchPath = HEAD.split(":")[1];
-        return Utils.getLastSegment(branchPath);
-    }
-
     /**
      * Invariants: a merge commit has "second" key on its parentCommitsMap
      */
@@ -187,6 +187,31 @@ public class Gitlet {
             }
         }
 
+    }
+
+    private static void printLogFromCommit(Commit commit) {
+        StringBuilder sb = new StringBuilder();
+
+        String pattern = Utils.getDateFormatPattern();
+        DateFormat formatter = new SimpleDateFormat(pattern);
+
+        sb.append("===").append("\n");
+        String sha1 = Utils.sha1(commit.toString());
+        sb.append("commit ").append(sha1).append("\n");
+
+        if (commit.parentCommits != null && commit.parentCommits.containsKey("second")) {
+            // case for merge commits
+            sb.append("Merge: ")
+                    .append(commit.parentCommits.get("first"), 0, 4)
+                    .append(commit.parentCommits.get("second"), 0, 4)
+                    .append("\n");
+        }
+
+        String date = formatter.format(commit.date);
+        sb.append("Date: ").append(date).append("\n");
+        sb.append(commit.message).append("\n\n");
+
+        System.out.print(sb);
     }
 
     public static void handleGlobalLog() {
@@ -214,33 +239,6 @@ public class Gitlet {
             throw Utils.error("Found no commit with that message.");
         }
     }
-
-
-    private static void printLogFromCommit(Commit commit) {
-        StringBuilder sb = new StringBuilder();
-
-        String pattern = Utils.getDateFormatPattern();
-        DateFormat formatter = new SimpleDateFormat(pattern);
-
-        sb.append("===").append("\n");
-        String sha1 = Utils.sha1(commit.toString());
-        sb.append("commit ").append(sha1).append("\n");
-
-        if (commit.parentCommits != null && commit.parentCommits.containsKey("second")) {
-            // case for merge commits
-            sb.append("Merge: ")
-                    .append(commit.parentCommits.get("first"), 0, 4)
-                    .append(commit.parentCommits.get("second"), 0, 4)
-                    .append("\n");
-        }
-
-        String date = formatter.format(commit.date);
-        sb.append("Date: ").append(date).append("\n");
-        sb.append(commit.message).append("\n\n");
-
-        System.out.print(sb);
-    }
-
 
     public static void handleStatus() {
         // branches part
@@ -287,76 +285,6 @@ public class Gitlet {
             System.out.println(s);
         }
         System.out.println();
-    }
-
-    /**
-     * A file in the working directory is "modified but not staged" if it is
-     * <ul>
-     *  <li>Tracked in the current commit, changed in the working directory, but not staged; or
-     *  <li>Staged for addition, but with different contents than in the working directory; or</li>
-     *  <li>Staged for addition, but deleted in the working directory; or</li>
-     *  <li>Not staged for removal, but tracked in the current commit and deleted from the working directory.</li>
-     * </ul>
-     */
-    private static TreeMap<String, String> generateModifiedButNotStagedMap(List<String> fileNamesInDir) {
-        TreeMap<String, String> modifiedMap = new TreeMap<>();
-
-        assert fileNamesInDir != null;
-        Set<String> fileNamesSet = new HashSet<>(fileNamesInDir);
-
-        Commit currentCommit = getCurrentCommit();
-
-        // files tracked in current commit
-        currentCommit.fileBlobsha1Map.forEach(
-                (key, value) -> {
-                    // deleted from working directory
-                    if (!fileNamesSet.contains(key)) {
-                        // but not staged from removal
-                        if (!Repository.stagingRemovalMap.containsKey(key)) {
-                            modifiedMap.put(key, "(deleted1)");
-                        }
-                    } else if (!Repository.stagingAreaMap.containsKey(key)
-                            && !Repository.stagingRemovalMap.containsKey(key)) {
-                        String currentFileContents = Utils.readContentsAsString(new File(key));
-                        String sha1 = Utils.sha1(currentFileContents);
-                        // in working directory, tracked in commit but changed and not staged
-                        if (!Objects.equals(value, sha1)) {
-                            modifiedMap.put(key, "(modified1)");
-                        }
-                    }
-                }
-        );
-
-
-        Repository.stagingAreaMap.forEach((key, value) -> {
-            if (!fileNamesSet.contains(key)) {
-                modifiedMap.put(key, "(deleted2)");
-            } else {
-                String currentFileContents = Utils.readContentsAsString(new File(key));
-                String sha1 = Utils.sha1(currentFileContents);
-
-                if (!Objects.equals(sha1, value)) {
-                    modifiedMap.put(key, "(modified2)");
-                }
-            }
-        });
-        return modifiedMap;
-    }
-
-    private static TreeSet<String> generateUntrackedFilesSet(List<String> fileNamesInDir) {
-        TreeSet<String> untrackedFilesSet = new TreeSet<>();
-        Commit currCommit = getCurrentCommit();
-        Map<String, String> fileTrackedMap = currCommit.fileBlobsha1Map;
-        fileNamesInDir.forEach(fileName -> {
-            if (fileTrackedMap.get(fileName) == null && Repository.stagingAreaMap.get(fileName) == null) {
-                untrackedFilesSet.add(fileName);
-            }
-            if (Repository.stagingRemovalMap.containsKey(fileName)) {
-                untrackedFilesSet.add(fileName);
-            }
-        });
-
-        return untrackedFilesSet;
     }
 
     public static void handleCheckout(String[] args) {
@@ -476,6 +404,17 @@ public class Gitlet {
         Utils.writeContents(Utils.join(Repository.BRANCH_DIR, branchName), sha1);
     }
 
+    private static boolean isBranchExist(String branchName) {
+        List<String> branchesFile = Utils.plainFilenamesIn(Repository.BRANCH_DIR);
+        assert branchesFile != null;
+        for (String branch : branchesFile) {
+            if (Objects.equals(branch, branchName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static void handleRmBranch(String branchName) {
         boolean branchExist = isBranchExist(branchName);
         if (!branchExist) {
@@ -549,16 +488,265 @@ public class Gitlet {
         Repository.removeFilesFromStagingArea();
     }
 
+    private static TreeSet<String> generateUntrackedFilesSet(List<String> fileNamesInDir) {
+        TreeSet<String> untrackedFilesSet = new TreeSet<>();
+        Commit currCommit = getCurrentCommit();
+        Map<String, String> fileTrackedMap = currCommit.fileBlobsha1Map;
+        fileNamesInDir.forEach(fileName -> {
+            if (fileTrackedMap.get(fileName) == null && Repository.stagingAreaMap.get(fileName) == null) {
+                untrackedFilesSet.add(fileName);
+            }
+            if (Repository.stagingRemovalMap.containsKey(fileName)) {
+                untrackedFilesSet.add(fileName);
+            }
+        });
 
-    private static boolean isBranchExist(String branchName) {
-        List<String> branchesFile = Utils.plainFilenamesIn(Repository.BRANCH_DIR);
-        assert branchesFile != null;
-        for (String branch : branchesFile) {
-            if (Objects.equals(branch, branchName)) {
-                return true;
+        return untrackedFilesSet;
+    }
+
+    public static void handleMerge(String branchName) {
+        if (!Repository.stagingAreaMap.isEmpty() || !Repository.stagingRemovalMap.isEmpty()) {
+            throw Utils.error("You have uncommited changes.");
+        }
+        if (!isBranchExist(branchName)) {
+            throw Utils.error("A branch with that name does not exist.");
+        }
+        if (Objects.equals(branchName, getCurrentBranch())) {
+            throw Utils.error("Cannot merge a branch with itself.");
+        }
+
+        List<String> fileNamesInDir = Utils.plainFilenamesIn(Repository.CWD);
+        assert fileNamesInDir != null;
+
+        if (!generateUntrackedFilesSet(fileNamesInDir).isEmpty()) {
+            throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
+        }
+
+        Commit splitPoint = getSplitPointWithOtherBranch(branchName);
+
+        Commit thisBranch = getCurrentCommit();
+
+        String otherSha1 = Utils.readContentsAsString(Utils.join(Repository.BRANCH_DIR, branchName));
+        Commit otherBranch = Utils.readObject(
+                Utils.join(Repository.COMMIT_DIR, otherSha1), Commit.class
+        );
+
+        if (Objects.equals(otherBranch, splitPoint)) {
+            Utils.printThenExit("Given branch is an ancestor of the current branch.");
+        }
+
+        if (Objects.equals(thisBranch, splitPoint)) {
+            handleCheckout(new String[]{"checkout", branchName});
+            Utils.printThenExit("Current branch fast-forwarded.");
+        }
+
+        Map<String, String> fileToTrackMap = generateFileToTrackForMerging(splitPoint, thisBranch, otherBranch);
+        modifyFileToTrackBasedOnMergingRules(fileToTrackMap, splitPoint, thisBranch, otherBranch);
+
+        System.out.println(fileToTrackMap);
+    }
+
+    private static void modifyFileToTrackBasedOnMergingRules(Map<String, String> fileToTrackMap, Commit splitPoint, Commit thisBranch, Commit otherBranch) {
+        fileToTrackMap.forEach((file, blobSha1) -> {
+            String splitPointBlob = splitPoint.fileBlobsha1Map.get(file);
+            String thisBranchBlob = thisBranch.fileBlobsha1Map.get(file);
+            String otherBranchBlob = otherBranch.fileBlobsha1Map.get(file);
+
+            // rule 1 && rule 6
+            if (splitPointBlob != null && Objects.equals(splitPointBlob, thisBranchBlob) && !Objects.equals(thisBranchBlob, otherBranchBlob)) {
+                // rule 1 - Modified in other but not HEAD -> Other
+                if (otherBranchBlob != null) {
+                    fileToTrackMap.put(file, otherBranchBlob);
+                }
+                // rule 6 - Head unmodified, but not present in other -> Remove
+                else {
+                    fileToTrackMap.put(file, "DELETE");
+                }
+            }
+            // rule 2 && rule 7
+            else if (splitPointBlob != null && Objects.equals(splitPointBlob, otherBranchBlob) && !Objects.equals(otherBranchBlob, thisBranchBlob)) {
+                // rule 2 - Modified in HEAD but not other -> HEAD
+                if (thisBranchBlob != null) {
+                    fileToTrackMap.put(file, thisBranchBlob);
+                }
+                // rule 7 - Other unmodified, but not present in HEAD -> Remain absent
+                else {
+                    fileToTrackMap.remove(file);
+                }
+            }
+            // rule 4 && rule 5
+            else if (splitPointBlob == null) {
+                // rule 4 - Not in split nor other, but in HEAD -> HEAD
+                if (otherBranchBlob == null) {
+                    fileToTrackMap.put(file, thisBranchBlob);
+                }
+                // rule 5 - Not in split nor head, but in other -> other
+                else {
+                    fileToTrackMap.put(file, otherBranchBlob);
+                }
+            }
+            // rule 3 - Branching A & B
+            else {
+                // modified in both, but same way
+                if (Objects.equals(thisBranchBlob, otherBranchBlob)) {
+                    fileToTrackMap.remove(file);
+                }
+                // modified in both, but different way
+                else {
+                    fileToTrackMap.put(file, "CONFLICT");
+                }
+            }
+        });
+    }
+
+    private static Map<String, String> generateFileToTrackForMerging(Commit splitPoint, Commit thisBranch, Commit otherBranch) {
+        Map<String, String> filetoTrackMap = new HashMap<>();
+        splitPoint.fileBlobsha1Map.forEach((key, value) -> filetoTrackMap.put(key, ""));
+        thisBranch.fileBlobsha1Map.forEach((key, value) -> filetoTrackMap.put(key, ""));
+        otherBranch.fileBlobsha1Map.forEach((key, value) -> filetoTrackMap.put(key, ""));
+        return filetoTrackMap;
+    }
+
+
+    /**
+     * A file in the working directory is "modified but not staged" if it is
+     * <ul>
+     *  <li>Tracked in the current commit, changed in the working directory, but not staged; or
+     *  <li>Staged for addition, but with different contents than in the working directory; or</li>
+     *  <li>Staged for addition, but deleted in the working directory; or</li>
+     *  <li>Not staged for removal, but tracked in the current commit and deleted from the working directory.</li>
+     * </ul>
+     */
+    private static TreeMap<String, String> generateModifiedButNotStagedMap(List<String> fileNamesInDir) {
+        TreeMap<String, String> modifiedMap = new TreeMap<>();
+
+        assert fileNamesInDir != null;
+        Set<String> fileNamesSet = new HashSet<>(fileNamesInDir);
+
+        Commit currentCommit = getCurrentCommit();
+
+        // files tracked in current commit
+        currentCommit.fileBlobsha1Map.forEach(
+                (key, value) -> {
+                    // deleted from working directory
+                    if (!fileNamesSet.contains(key)) {
+                        // but not staged from removal
+                        if (!Repository.stagingRemovalMap.containsKey(key)) {
+                            modifiedMap.put(key, "(deleted)");
+                        }
+                    } else if (!Repository.stagingAreaMap.containsKey(key)
+                            && !Repository.stagingRemovalMap.containsKey(key)) {
+                        String currentFileContents = Utils.readContentsAsString(new File(key));
+                        String sha1 = Utils.sha1(currentFileContents);
+                        // in working directory, tracked in commit but changed and not staged
+                        if (!Objects.equals(value, sha1)) {
+                            modifiedMap.put(key, "(modified)");
+                        }
+                    }
+                }
+        );
+
+
+        Repository.stagingAreaMap.forEach((key, value) -> {
+            if (!fileNamesSet.contains(key)) {
+                modifiedMap.put(key, "(deleted)");
+            } else {
+                String currentFileContents = Utils.readContentsAsString(new File(key));
+                String sha1 = Utils.sha1(currentFileContents);
+
+                if (!Objects.equals(sha1, value)) {
+                    modifiedMap.put(key, "(modified)");
+                }
+            }
+        });
+        return modifiedMap;
+    }
+
+    private static Commit getSplitPointWithOtherBranch(String otherBranch) {
+        Commit commit = getCurrentCommit();
+
+        Set<Commit> currentBranchCommits = new HashSet<>();
+
+        // fill currentBranch commit set history
+        while (commit != null) {
+            currentBranchCommits.add(commit);
+
+            if (commit.parentCommits == null) {
+                break;
+            }
+
+            String firstParentSha1 = commit.parentCommits.get("first");
+            String secondParentSha1 = commit.parentCommits.get("second");
+
+            // merge commit case
+            if (firstParentSha1 != null && secondParentSha1 != null) {
+                Commit firstParent = Utils.readObject(
+                        Utils.join(Repository.COMMIT_DIR, firstParentSha1), Commit.class);
+                Commit secondParent = Utils.readObject(
+                        Utils.join(Repository.COMMIT_DIR, secondParentSha1), Commit.class);
+                currentBranchCommits.add(firstParent);
+                currentBranchCommits.add(secondParent);
+
+                if (!firstParent.parentCommits.containsKey("first")) {
+                    commit = null;
+                    continue;
+                }
+
+                commit = Utils.readObject(
+                        Utils.join(Repository.COMMIT_DIR
+                                , firstParent.parentCommits.get("first")),
+                        Commit.class);
+
+            } else if (firstParentSha1 != null) {
+                commit = Utils.readObject(
+                        Utils.join(Repository.COMMIT_DIR, firstParentSha1), Commit.class);
+            } else {
+                commit = null;
             }
         }
-        return false;
+
+        String otherSha1 = Utils.readContentsAsString(
+                Utils.join(Repository.BRANCH_DIR, otherBranch)
+        );
+
+        Commit other = Utils.readObject(Utils.join(Repository.COMMIT_DIR, otherSha1),
+                Commit.class);
+
+        // traverse other branch, if we get a commit that is on the other branch we gucci
+        while (other != null && !currentBranchCommits.contains(other)) {
+            String firstParentSha1 = other.parentCommits.get("first");
+            String secondParentSha1 = other.parentCommits.get("second");
+
+            if (other.parentCommits == null) {
+                break;
+            }
+
+            if (firstParentSha1 != null && secondParentSha1 != null) {
+                Commit firstParent = Utils.readObject(
+                        Utils.join(Repository.COMMIT_DIR, firstParentSha1), Commit.class);
+                Commit secondParent = Utils.readObject(
+                        Utils.join(Repository.COMMIT_DIR, secondParentSha1), Commit.class);
+
+                if (currentBranchCommits.contains(firstParent)) {
+                    other = firstParent;
+                    break;
+                }
+
+                if (currentBranchCommits.contains(secondParent)) {
+                    other = secondParent;
+                    break;
+                }
+            }
+
+            if (firstParentSha1 != null) {
+                other = Utils.readObject(
+                        Utils.join(Repository.COMMIT_DIR, firstParentSha1), Commit.class);
+            } else {
+                other = null;
+            }
+        }
+
+        return other;
     }
 
 }
