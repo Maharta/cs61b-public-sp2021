@@ -571,7 +571,6 @@ public class Gitlet {
             Map<String, String> fileMap = generateFileToTrackForMerging(splitPoint, thisBranch, otherBranch);
             Map<String, String> fileToBlob = modifyFileToTrackBasedOnMergingRules(fileMap, splitPoint, thisBranch, otherBranch);
 
-            System.out.println(fileToBlob);
             fileToBlob.forEach((fileName, value) -> {
                 // files need to be deleted
                 if (value.equals("DELETE")) {
@@ -611,8 +610,6 @@ public class Gitlet {
                 }
                 // hashed, to be fast-forwarded files. value contains sha1 hash of the blob.
                 else {
-                    System.out.println(value);
-                    System.out.println(fileName);
                     handleCheckout(new String[]{"checkout", value, "--", fileName});
                     handleAdd(fileName);
                 }
