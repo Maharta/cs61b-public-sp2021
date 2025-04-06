@@ -231,8 +231,9 @@ public class Gitlet {
         if (commit.parentCommits != null && commit.parentCommits.containsKey("second")) {
             // case for merge commits
             sb.append("Merge: ")
-                    .append(commit.parentCommits.get("first"), 0, 4)
-                    .append(commit.parentCommits.get("second"), 0, 4)
+                    .append(commit.parentCommits.get("first"), 0, 7)
+                    .append(" ")
+                    .append(commit.parentCommits.get("second"), 0, 7)
                     .append("\n");
         }
 
@@ -619,7 +620,7 @@ public class Gitlet {
             String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
             String[] parts = HEAD.split("/");
 
-            String commitMessage = "Merged " + givenBranchName + " into " + parts[parts.length - 1];
+            String commitMessage = "Merged " + givenBranchName + " into " + parts[parts.length - 1] + ".";
             handleMergeCommit(commitMessage, otherSha1);
 
             if (isConflict.get()) {
