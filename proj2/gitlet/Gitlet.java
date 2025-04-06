@@ -8,8 +8,15 @@ import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
+/**
+ * The Gitlet class represents the core functionality of a version-control system.
+ * This class contains various methods to perform operations such as
+ * initializing a repository, handling commits, branching, merging, and managing files.
+ * It relies heavily on supporting methods and structures to ensure consistency and track changes.
+ */
 public class Gitlet {
 
     public static void handleInit() {
@@ -114,6 +121,27 @@ public class Gitlet {
         Repository.persistStagingAreaMap();
     }
 
+    private static void handleMergeCommit(String commitMessage, String secondParentSha1) {
+        if (Repository.stagingAreaMap.isEmpty() && Repository.stagingRemovalMap.isEmpty()) {
+            throw Utils.error("No changes added to the commit");
+        }
+        // get current commit from the branch
+        Commit current = getCurrentCommit();
+        //modify currentCommit to newCommit, link newCommit parent to current sha1 hash
+        Commit newCommit = newCommit(current, commitMessage);
+        newCommit.parentCommits.put("second", secondParentSha1);
+        // persist new Commit
+        Repository.persistCommit(newCommit, getCurrentBranch());
+
+        // delete all the unnecessary files left in the staging-blob
+        Repository.removeFilesFromStagingArea();
+
+        // clean staging area and persist the changes
+        Repository.stagingAreaMap.clear();
+        Repository.stagingRemovalMap.clear();
+        Repository.persistStagingAreaMap();
+    }
+
     private static Commit newCommit(Commit currentCommit, String message) {
         String parentSha1 = Utils.sha1(currentCommit.toString());
 
@@ -136,7 +164,8 @@ public class Gitlet {
         });
 
         currentCommit.date = new Date();
-        currentCommit.parentCommits = Map.of("first", parentSha1);
+        currentCommit.parentCommits = new HashMap<>();
+        currentCommit.parentCommits.put("first", parentSha1);
         currentCommit.message = message;
         return currentCommit;
     }
@@ -504,14 +533,16 @@ public class Gitlet {
         return untrackedFilesSet;
     }
 
-    public static void handleMerge(String branchName) {
+    public static void handleMerge(String givenBranchName) {
+        AtomicBoolean isConflict = new AtomicBoolean(false);
+
         if (!Repository.stagingAreaMap.isEmpty() || !Repository.stagingRemovalMap.isEmpty()) {
             throw Utils.error("You have uncommited changes.");
         }
-        if (!isBranchExist(branchName)) {
+        if (!isBranchExist(givenBranchName)) {
             throw Utils.error("A branch with that name does not exist.");
         }
-        if (Objects.equals(branchName, getCurrentBranch())) {
+        if (Objects.equals(givenBranchName, getCurrentBranch())) {
             throw Utils.error("Cannot merge a branch with itself.");
         }
 
@@ -522,81 +553,140 @@ public class Gitlet {
             throw Utils.error("There is an untracked file in the way; delete it, or add and commit it first.");
         }
 
-        Commit splitPoint = getSplitPointWithOtherBranch(branchName);
+        Commit splitPoint = getSplitPointWithOtherBranch(givenBranchName);
 
         Commit thisBranch = getCurrentCommit();
 
-        String otherSha1 = Utils.readContentsAsString(Utils.join(Repository.BRANCH_DIR, branchName));
+        String otherSha1 = Utils.readContentsAsString(Utils.join(Repository.BRANCH_DIR, givenBranchName));
         Commit otherBranch = Utils.readObject(
                 Utils.join(Repository.COMMIT_DIR, otherSha1), Commit.class
         );
 
         if (Objects.equals(otherBranch, splitPoint)) {
             Utils.printThenExit("Given branch is an ancestor of the current branch.");
-        }
-
-        if (Objects.equals(thisBranch, splitPoint)) {
-            handleCheckout(new String[]{"checkout", branchName});
+        } else if (Objects.equals(thisBranch, splitPoint)) {
+            handleCheckout(new String[]{"checkout", givenBranchName});
             Utils.printThenExit("Current branch fast-forwarded.");
+        } else {
+            Map<String, String> fileMap = generateFileToTrackForMerging(splitPoint, thisBranch, otherBranch);
+            Map<String, String> fileToBlob = modifyFileToTrackBasedOnMergingRules(fileMap, splitPoint, thisBranch, otherBranch);
+
+            System.out.println(fileToBlob);
+            fileToBlob.forEach((fileName, value) -> {
+                // files need to be deleted
+                if (value.equals("DELETE")) {
+                    handleRm(fileName);
+                }
+                // conflicted files
+                else if (value.equals("CONFLICT")) {
+                    isConflict.set(true);
+
+                    String blob = thisBranch.fileBlobsha1Map.get(fileName);
+                    String fileContents = "";
+                    if (blob != null) {
+                        fileContents = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, blob));
+                    }
+
+                    String givenBlob = otherBranch.fileBlobsha1Map.get(fileName);
+                    String givenFileContents = "";
+
+                    if (givenBlob != null) {
+                        givenFileContents = Utils.readContentsAsString(Utils.join(Repository.BLOB_DIR, givenBlob));
+                    }
+
+                    if (Utils.plainFilenamesIn(Repository.CWD).contains(fileName)) {
+                        String newContents = """
+                                <<<<<<< HEAD
+                                ${fileContents}
+                                =======
+                                ${givenFileContents}
+                                >>>>>>>
+                                """.replace("${fileContents}", fileContents)
+                                .replace("${givenFileContents}", givenFileContents);
+
+                        Utils.writeContents(Utils.join(Repository.CWD, fileName), newContents);
+                    }
+
+                    handleAdd(fileName);
+                }
+                // hashed, to be fast-forwarded files. value contains sha1 hash of the blob.
+                else {
+                    System.out.println(value);
+                    System.out.println(fileName);
+                    handleCheckout(new String[]{"checkout", value, "--", fileName});
+                    handleAdd(fileName);
+                }
+            });
+
+
+            String HEAD = Utils.readContentsAsString(Utils.join(Repository.CWD, ".gitlet", "HEAD"));
+            String[] parts = HEAD.split("/");
+
+            String commitMessage = "Merged " + givenBranchName + " into " + parts[parts.length - 1];
+            handleMergeCommit(commitMessage, otherSha1);
+
+            if (isConflict.get()) {
+                Utils.message("Encountered a merge conflict.");
+            }
+
+
         }
 
-        Map<String, String> fileToTrackMap = generateFileToTrackForMerging(splitPoint, thisBranch, otherBranch);
-        modifyFileToTrackBasedOnMergingRules(fileToTrackMap, splitPoint, thisBranch, otherBranch);
 
-        System.out.println(fileToTrackMap);
     }
 
-    private static void modifyFileToTrackBasedOnMergingRules(Map<String, String> fileToTrackMap, Commit splitPoint, Commit thisBranch, Commit otherBranch) {
+    private static Map<String, String> modifyFileToTrackBasedOnMergingRules(Map<String, String> fileToTrackMap, Commit splitPoint, Commit thisBranch, Commit givenBranch) {
+
+        Map<String, String> fileToBlob = new HashMap<>(fileToTrackMap);
+
         fileToTrackMap.forEach((file, blobSha1) -> {
             String splitPointBlob = splitPoint.fileBlobsha1Map.get(file);
             String thisBranchBlob = thisBranch.fileBlobsha1Map.get(file);
-            String otherBranchBlob = otherBranch.fileBlobsha1Map.get(file);
+            String otherBranchBlob = givenBranch.fileBlobsha1Map.get(file);
 
             // rule 1 && rule 6
-            if (splitPointBlob != null && Objects.equals(splitPointBlob, thisBranchBlob) && !Objects.equals(thisBranchBlob, otherBranchBlob)) {
+            if (splitPointBlob != null
+                    && Objects.equals(splitPointBlob, thisBranchBlob)
+                    && !Objects.equals(thisBranchBlob, otherBranchBlob)) {
                 // rule 1 - Modified in other but not HEAD -> Other
                 if (otherBranchBlob != null) {
-                    fileToTrackMap.put(file, otherBranchBlob);
+                    fileToBlob.put(file, Utils.sha1(givenBranch.toString()));
                 }
                 // rule 6 - Head unmodified, but not present in other -> Remove
                 else {
-                    fileToTrackMap.put(file, "DELETE");
+                    fileToBlob.put(file, "DELETE");
                 }
             }
-            // rule 2 && rule 7
-            else if (splitPointBlob != null && Objects.equals(splitPointBlob, otherBranchBlob) && !Objects.equals(otherBranchBlob, thisBranchBlob)) {
-                // rule 2 - Modified in HEAD but not other -> HEAD
-                if (thisBranchBlob != null) {
-                    fileToTrackMap.put(file, thisBranchBlob);
-                }
-                // rule 7 - Other unmodified, but not present in HEAD -> Remain absent
-                else {
-                    fileToTrackMap.remove(file);
-                }
+            // rule 2 && rule 7 - other == splitPoint, modified in current -> stay as they are
+            else if (splitPointBlob != null
+                    && Objects.equals(splitPointBlob, otherBranchBlob)
+                    && !Objects.equals(otherBranchBlob, thisBranchBlob)) {
+                fileToBlob.remove(file);
             }
-            // rule 4 && rule 5
-            else if (splitPointBlob == null) {
-                // rule 4 - Not in split nor other, but in HEAD -> HEAD
-                if (otherBranchBlob == null) {
-                    fileToTrackMap.put(file, thisBranchBlob);
-                }
-                // rule 5 - Not in split nor head, but in other -> other
-                else {
-                    fileToTrackMap.put(file, otherBranchBlob);
-                }
+            // rule 4 - Not in split nor other, but in HEAD -> HEAD
+            else if (splitPointBlob == null && otherBranchBlob == null) {
+                fileToBlob.remove(file);
+
             }
-            // rule 3 - Branching A & B
+            // rule 5 - Not in split nor HEAD, but in other -> other
+            else if (splitPointBlob == null && thisBranchBlob == null) {
+                fileToBlob.put(file, Utils.sha1(givenBranch.toString()));
+            }
+            // rule 3 & rule 8 - Branching A & B
             else {
-                // modified in both, but same way
+                // rule 3 - modified in both, but same way
                 if (Objects.equals(thisBranchBlob, otherBranchBlob)) {
-                    fileToTrackMap.remove(file);
+                    fileToBlob.remove(file);
                 }
-                // modified in both, but different way
+
+                // rule 8 - modified in both, but different way
                 else {
-                    fileToTrackMap.put(file, "CONFLICT");
+                    fileToBlob.put(file, "CONFLICT");
                 }
             }
         });
+
+        return fileToBlob;
     }
 
     private static Map<String, String> generateFileToTrackForMerging(Commit splitPoint, Commit thisBranch, Commit otherBranch) {
