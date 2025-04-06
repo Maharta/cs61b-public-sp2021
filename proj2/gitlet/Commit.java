@@ -1,10 +1,10 @@
 package gitlet;
 
-// TODO: any imports you need here
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents a gitlet commit object.
@@ -67,5 +67,22 @@ public class Commit implements Serializable, Dumpable {
         System.out.println(message);
         System.out.println(fileBlobsha1Map);
         System.out.println(date);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Commit commit = (Commit) o;
+        return Objects.equals(date, commit.date)
+                && Objects.equals(author, commit.author)
+                && Objects.equals(parentCommits, commit.parentCommits)
+                && Objects.equals(fileBlobsha1Map, commit.fileBlobsha1Map)
+                && Objects.equals(message, commit.message);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(date, author, parentCommits, fileBlobsha1Map, message);
     }
 }
